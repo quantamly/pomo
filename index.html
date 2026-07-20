@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Nari — a calm random pomodoro</title>
+  <meta name="description" content="A gentle pomodoro timer that draws random focus and rest lengths, wrapped in hand-drawn Ghibli-style nature scenes." />
+  <meta name="theme-color" content="#2B3A2E" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%83%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body data-mood="light">
+  <!-- Living background scene -->
+  <div id="scene" aria-hidden="true"></div>
+  <div class="scene-veil" aria-hidden="true"></div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">🍃</span>
+      <span class="brand-name">Nari</span>
+    </div>
+    <button id="openSettings" class="ghost-btn" aria-haspopup="dialog" aria-controls="panel">
+      <span class="gear" aria-hidden="true">✦</span> Settings
+    </button>
+  </header>
+
+  <!-- The hero: the timer -->
+  <main class="stage">
+    <section class="timer-card glass" aria-live="polite">
+      <p class="phase-pill" id="phaseLabel">Ready</p>
+
+      <div class="dial">
+        <svg class="ring" viewBox="0 0 240 240" aria-hidden="true">
+          <circle class="ring-track" cx="120" cy="120" r="110" />
+          <circle class="ring-progress" id="ringProgress" cx="120" cy="120" r="110" />
+        </svg>
+        <div class="clock-wrap">
+          <div class="clock" id="clock">25:00</div>
+          <div class="clock-note" id="clockNote">Press start to begin</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="startBtn" class="btn btn-primary">Start</button>
+        <button id="skipBtn" class="btn btn-quiet" title="Skip to the next phase">Skip</button>
+        <button id="resetBtn" class="btn btn-quiet" title="Reset the current phase">Reset</button>
+      </div>
+
+      <div class="cycle-row">
+        <span id="sessionCount">Session 1</span>
+        <span class="leaf-trail" id="leafTrail" aria-hidden="true"></span>
+      </div>
+    </section>
+  </main>
+
+  <!-- Scene quick-switcher -->
+  <nav class="scene-dock" id="sceneDock" aria-label="Choose a background scene"></nav>
+
+  <!-- Settings drawer -->
+  <div class="scrim" id="scrim" hidden></div>
+  <aside class="panel glass" id="panel" role="dialog" aria-modal="true" aria-label="Settings" hidden>
+    <div class="panel-head">
+      <h2>Settings</h2>
+      <button id="closeSettings" class="ghost-btn" aria-label="Close settings">✕</button>
+    </div>
+
+    <div class="panel-body">
+      <section class="field-group">
+        <h3>Focus length</h3>
+        <p class="hint">Each focus block is drawn at random from this range.</p>
+        <div class="range-row">
+          <label>Min <input type="number" id="focusMin" min="1" max="180" value="20" /> min</label>
+          <label>Max <input type="number" id="focusMax" min="1" max="180" value="30" /> min</label>
+        </div>
+      </section>
+
+      <section class="field-group">
+        <h3>Rest length</h3>
+        <p class="hint">Breaks are drawn at random from this range too.</p>
+        <div class="range-row">
+          <label>Min <input type="number" id="restMin" min="1" max="120" value="5" /> min</label>
+          <label>Max <input type="number" id="restMax" min="1" max="120" value="10" /> min</label>
+        </div>
+      </section>
+
+      <section class="field-group">
+        <label class="switch-row">
+          <input type="checkbox" id="autoCycle" checked />
+          <span>Flow automatically between focus and rest</span>
+        </label>
+      </section>
+
+      <section class="field-group">
+        <h3>When focus begins</h3>
+        <div class="sound-row">
+          <select id="focusSound" class="select"></select>
+          <button class="btn btn-quiet btn-sm" data-preview="focus">Preview</button>
+        </div>
+      </section>
+
+      <section class="field-group">
+        <h3>When a break begins</h3>
+        <div class="sound-row">
+          <select id="breakSound" class="select"></select>
+          <button class="btn btn-quiet btn-sm" data-preview="break">Preview</button>
+        </div>
+      </section>
+
+      <section class="field-group">
+        <h3>Scenery</h3>
+        <div class="scene-grid" id="sceneGrid"></div>
+        <label class="upload-btn btn btn-quiet">
+          Use my own background
+          <input type="file" id="bgUpload" accept="image/*" hidden />
+        </label>
+        <button id="clearCustom" class="linklike" hidden>Remove custom background</button>
+      </section>
+    </div>
+  </aside>
+
+  <script src="js/scenes.js"></script>
+  <script src="js/sounds.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
