@@ -97,19 +97,32 @@
       </section>
 
       <section class="field-group">
-        <h3>When focus begins</h3>
+        <h3>When focus ends</h3>
         <div class="sound-row">
-          <select id="focusSound" class="select"></select>
-          <button class="btn btn-quiet btn-sm" data-preview="focus">Preview</button>
+          <select id="focusEndSound" class="select"></select>
+          <button class="btn btn-quiet btn-sm" data-preview="focusEnd">Preview</button>
         </div>
       </section>
 
       <section class="field-group">
-        <h3>When a break begins</h3>
+        <h3>When a break ends</h3>
         <div class="sound-row">
-          <select id="breakSound" class="select"></select>
-          <button class="btn btn-quiet btn-sm" data-preview="break">Preview</button>
+          <select id="breakEndSound" class="select"></select>
+          <button class="btn btn-quiet btn-sm" data-preview="breakEnd">Preview</button>
         </div>
+      </section>
+
+      <section class="field-group">
+        <h3>Alarm volume</h3>
+        <input type="range" id="alarmVolume" class="slider" min="0" max="100" value="80"
+               aria-label="Alarm volume" />
+      </section>
+
+      <section class="field-group">
+        <label class="switch-row">
+          <input type="checkbox" id="uiSounds" checked />
+          <span>Soft tap sound on buttons</span>
+        </label>
       </section>
 
       <section class="field-group">

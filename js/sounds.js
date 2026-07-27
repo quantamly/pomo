@@ -1,23 +1,30 @@
 /* ============================================================
    sounds.js — alarm tones synthesized with the Web Audio API.
    No audio files to download; every chime is generated live,
-   so the app stays self-contained and instant.
+   so the app stays self-contained and instant. Everything runs
+   through a master gain so a single volume controls it all.
    ============================================================ */
 
 (function () {
   "use strict";
 
   var ctx = null;
+  var master = null;
+  var volume = 0.8;
+
   function audio() {
     if (!ctx) {
       var AC = window.AudioContext || window.webkitAudioContext;
       ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = volume;
+      master.connect(ctx.destination);
     }
     if (ctx.state === "suspended") ctx.resume();
     return ctx;
   }
 
-  // one voice: oscillator -> gain envelope -> (optional) filter -> out
+  // one voice: oscillator -> gain envelope -> (optional) filter -> master
   function voice(ac, opts) {
     var t0 = opts.start;
     var osc = ac.createOscillator();
@@ -43,12 +50,13 @@
     } else {
       node.connect(gain);
     }
-    gain.connect(ac.destination);
+    gain.connect(master);
     osc.start(t0);
     osc.stop(t0 + opts.dur + 0.05);
   }
 
-  var PENTA = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5]; // C D E G A C
+  var PENTA = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];      // C D E G A C
+  var PENTA_HI = [1046.5, 1174.7, 1318.5, 1568.0, 1760.0, 2093.0];  // one octave up
 
   var LIBRARY = {
     bell: function (ac, t) {
@@ -61,13 +69,7 @@
       // wind chimes: a scatter of pentatonic notes
       var order = [4, 2, 5, 3, 1];
       for (var i = 0; i < order.length; i++) {
-        voice(ac, {
-          start: t + i * 0.14,
-          freq: PENTA[order[i]],
-          dur: 1.6,
-          gain: 0.22,
-          type: "triangle",
-        });
+        voice(ac, { start: t + i * 0.14, freq: PENTA[order[i]], dur: 1.6, gain: 0.22, type: "triangle" });
       }
     },
     birds: function (ac, t) {
@@ -75,15 +77,7 @@
       var offsets = [0, 0.13, 0.22, 0.4, 0.52, 0.66];
       for (var i = 0; i < offsets.length; i++) {
         var base = 1700 + (i % 3) * 260;
-        voice(ac, {
-          start: t + offsets[i],
-          freq: base,
-          glideTo: base + 900,
-          dur: 0.11,
-          gain: 0.18,
-          attack: 0.005,
-          type: "sine",
-        });
+        voice(ac, { start: t + offsets[i], freq: base, glideTo: base + 900, dur: 0.11, gain: 0.18, attack: 0.005, type: "sine" });
       }
     },
     gong: function (ac, t) {
@@ -104,15 +98,7 @@
       // soft water drops, pitch bending down
       var offs = [0, 0.28, 0.5];
       for (var i = 0; i < offs.length; i++) {
-        voice(ac, {
-          start: t + offs[i],
-          freq: 1100 - i * 120,
-          glideTo: 520 - i * 60,
-          dur: 0.34,
-          gain: 0.26,
-          attack: 0.004,
-          type: "sine",
-        });
+        voice(ac, { start: t + offs[i], freq: 1100 - i * 120, glideTo: 520 - i * 60, dur: 0.34, gain: 0.26, attack: 0.004, type: "sine" });
       }
     },
     digital: function (ac, t) {
@@ -122,17 +108,59 @@
         voice(ac, { start: t + i * 0.16, freq: seq[i], dur: 0.13, gain: 0.2, attack: 0.004, type: "triangle" });
       }
     },
+    bowl: function (ac, t) {
+      // singing bowl: slow shimmering swell with beating partials
+      voice(ac, { start: t, freq: 320, dur: 3.6, gain: 0.30, attack: 0.12, type: "sine" });
+      voice(ac, { start: t, freq: 323, dur: 3.6, gain: 0.20, attack: 0.14, type: "sine" }); // slight detune -> beats
+      voice(ac, { start: t, freq: 320 * 2.4, dur: 2.4, gain: 0.08, attack: 0.2, type: "sine" });
+    },
+    koto: function (ac, t) {
+      // plucked string arpeggio, bright attack
+      var notes = [1, 3, 4, 5];
+      for (var i = 0; i < notes.length; i++) {
+        voice(ac, { start: t + i * 0.15, freq: PENTA[notes[i]], dur: 0.9, gain: 0.24, attack: 0.002, type: "sawtooth", filter: "lowpass", filterFreq: 2200 });
+      }
+    },
+    musicbox: function (ac, t) {
+      // tinkling high melody, quick decays
+      var mel = [2, 4, 5, 4, 2];
+      for (var i = 0; i < mel.length; i++) {
+        voice(ac, { start: t + i * 0.18, freq: PENTA_HI[mel[i]], dur: 0.6, gain: 0.16, attack: 0.003, type: "sine" });
+        voice(ac, { start: t + i * 0.18, freq: PENTA_HI[mel[i]] * 2, dur: 0.2, gain: 0.03, attack: 0.003, type: "sine" });
+      }
+    },
+    rainstick: function (ac, t) {
+      // a soft cascade of tiny high ticks trickling down
+      for (var i = 0; i < 22; i++) {
+        var f = 1600 + Math.random() * 2200;
+        voice(ac, { start: t + i * 0.045 + Math.random() * 0.02, freq: f, dur: 0.05, gain: 0.06, attack: 0.002, type: "triangle" });
+      }
+    },
+    zenblock: function (ac, t) {
+      // hollow wood block: two knocks
+      [0, 0.22].forEach(function (o) {
+        voice(ac, { start: t + o, freq: 300, glideTo: 180, dur: 0.14, gain: 0.28, attack: 0.002, type: "square", filter: "lowpass", filterFreq: 800 });
+      });
+    },
+    sunrise: function (ac, t) {
+      // ascending pentatonic run, gentle
+      var run = [0, 1, 2, 3, 4, 5];
+      for (var i = 0; i < run.length; i++) {
+        voice(ac, { start: t + i * 0.11, freq: PENTA[run[i]], dur: 0.9, gain: 0.18, attack: 0.006, type: "triangle" });
+      }
+    },
   };
 
-  var ORDER = ["chime", "bell", "birds", "marimba", "droplet", "gong", "digital"];
+  var ORDER = [
+    "chime", "marimba", "bowl", "koto", "musicbox", "bell",
+    "birds", "droplet", "rainstick", "zenblock", "sunrise", "gong", "digital",
+  ];
   var LABELS = {
-    bell: "Temple bell",
-    chime: "Wind chime",
-    birds: "Birdsong",
-    gong: "Deep gong",
-    marimba: "Marimba",
-    droplet: "Water drops",
-    digital: "Soft tone",
+    bell: "Temple bell", chime: "Wind chime", birds: "Birdsong",
+    gong: "Deep gong", marimba: "Marimba", droplet: "Water drops",
+    digital: "Soft tone", bowl: "Singing bowl", koto: "Koto pluck",
+    musicbox: "Music box", rainstick: "Rain stick", zenblock: "Wood block",
+    sunrise: "Rising chime",
   };
 
   window.NariSounds = {
@@ -143,6 +171,16 @@
       var fn = LIBRARY[id] || LIBRARY.chime;
       var ac = audio();
       fn(ac, ac.currentTime + 0.02);
+    },
+    // low, soft wood-block for button presses — reassuring, not alerting
+    tap: function () {
+      var ac = audio();
+      var t = ac.currentTime + 0.005;
+      voice(ac, { start: t, freq: 150, glideTo: 92, dur: 0.09, gain: 0.14, attack: 0.002, type: "sine", filter: "lowpass", filterFreq: 500 });
+    },
+    setVolume: function (v) {
+      volume = Math.max(0, Math.min(1, v));
+      if (master) master.gain.value = volume;
     },
     // let the browser unlock audio on the first user gesture
     warmup: function () { audio(); },

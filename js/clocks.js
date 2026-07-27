@@ -136,7 +136,12 @@
     hourglass: {
       id: "hourglass", name: "Live hourglass",
       build: function (dial) {
-        // top bulb drains from the neck up; bottom bulb fills from base up
+        // top bulb drains through a funnel; grains stream onto a growing pile
+        var grains = "";
+        for (var i = 0; i < 5; i++) {
+          grains += '<rect class="hg-grain" x="' + (118 + (i % 3)) + '" y="118" width="2.6" ' +
+            'height="5" rx="1.2" style="animation-delay:-' + (i * 0.16).toFixed(2) + 's"/>';
+        }
         dial.innerHTML =
           '<svg class="face-hg" viewBox="0 0 240 240" aria-hidden="true">' +
           "<defs>" +
@@ -145,9 +150,13 @@
           "</defs>" +
           '<polygon class="hg-glass" points="52,26 188,26 120,120"/>' +
           '<polygon class="hg-glass" points="120,120 52,214 188,214"/>' +
-          '<g clip-path="url(#hgTop)"><rect class="hg-sand" data-top x="44" width="152" /></g>' +
-          '<g clip-path="url(#hgBot)"><rect class="hg-sand" data-bot x="44" width="152" /></g>' +
-          '<rect class="hg-stream" data-stream x="118" width="4" />' +
+          '<polygon class="hg-sand" data-top clip-path="url(#hgTop)" points="" />' +
+          '<g clip-path="url(#hgBot)">' +
+          '<rect class="hg-sand" data-bot x="44" width="152" />' +
+          '<polygon class="hg-sand hg-mound" data-mound points="" />' +
+          "</g>" +
+          '<rect class="hg-stream" data-stream x="119" width="2.4" />' +
+          '<g class="hg-grains" data-grains>' + grains + "</g>" +
           '<rect class="hg-cap" x="40" y="18" width="160" height="10" rx="5"/>' +
           '<rect class="hg-cap" x="40" y="214" width="160" height="10" rx="5"/>' +
           "</svg>" +
@@ -155,24 +164,42 @@
           '<span class="sr-only" data-sr></span>';
         this.top = dial.querySelector("[data-top]");
         this.bot = dial.querySelector("[data-bot]");
+        this.mound = dial.querySelector("[data-mound]");
         this.stream = dial.querySelector("[data-stream]");
+        this.grains = dial.querySelector("[data-grains]");
         this.time = dial.querySelector("[data-clock]");
         this.sr = dial.querySelector("[data-sr]");
       },
       update: function (dial, frac, ms, running) {
-        var H = 94;                 // usable sand height per bulb
-        var topH = frac * H;        // sand remaining in the top
-        var botH = (1 - frac) * H;  // sand collected below
-        // top sand rests at the neck (y=120), surface drops as it drains
-        this.top.setAttribute("y", 120 - topH);
-        this.top.setAttribute("height", topH);
-        // bottom sand rests on the base (y=214), grows upward
-        this.bot.setAttribute("y", 214 - botH);
+        var H = 94;                    // usable sand height per bulb
+        var topH = frac * H;
+        var botH = (1 - frac) * H;
+        var topSurf = 120 - topH;      // y of the top sand surface
+        var botSurf = 214 - botH;      // y of the pile surface
+
+        // top sand with a funnel dip that deepens as it drains (clip keeps sides)
+        var dip = Math.min(18, (1 - frac) * 22 + 2);
+        this.top.setAttribute("points",
+          "44," + topSurf + " 108," + (topSurf + dip * 0.35) + " 120," + (topSurf + dip) +
+          " 132," + (topSurf + dip * 0.35) + " 196," + topSurf + " 196,120 44,120");
+
+        // bottom pile: trapezoid (clipped) + a centered mound peak
+        this.bot.setAttribute("y", botSurf);
         this.bot.setAttribute("height", botH);
-        var streaming = running && frac > 0.001 && frac < 0.999;
+        var mw = Math.min(48, botH * 0.75 + 4);
+        var peak = Math.min(18, botH * 0.30);
+        this.mound.setAttribute("points",
+          (120 - mw) + "," + botSurf + " 120," + (botSurf - peak) + " " + (120 + mw) + "," + botSurf);
+
+        // falling grains + guide stream whenever the sand is running down
+        var streaming = running && frac > 0.004;
+        var drop = Math.max(6, botSurf - 120);
         this.stream.setAttribute("y", 120);
-        this.stream.setAttribute("height", 214 - botH - 120);
-        this.stream.style.opacity = streaming ? "1" : "0";
+        this.stream.setAttribute("height", drop);
+        this.stream.style.opacity = streaming ? "0.7" : "0";
+        this.grains.style.setProperty("--drop", drop + "px");
+        this.grains.style.opacity = streaming ? "1" : "0";
+
         var t = fmt(ms);
         this.time.textContent = t;
         this.sr.textContent = t + " remaining";

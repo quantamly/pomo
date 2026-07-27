@@ -21,8 +21,10 @@
     autoStartFocus: true,
     autoStartBreak: true,
     clockStyle: "digital",
-    focusSound: "marimba",
-    breakSound: "chime",
+    focusEndSound: "bowl",
+    breakEndSound: "chime",
+    volume: 0.8,
+    uiSounds: true,
     scene: "meadow",
     customBg: null,
   };
@@ -37,6 +39,11 @@
         settings.autoStartBreak = saved.autoCycle;
       }
       delete settings.autoCycle;
+      // migrate old phase-START alarm keys to the new phase-END keys
+      if (saved.focusSound !== undefined && saved.focusEndSound === undefined) settings.focusEndSound = saved.focusSound;
+      if (saved.breakSound !== undefined && saved.breakEndSound === undefined) settings.breakEndSound = saved.breakSound;
+      delete settings.focusSound;
+      delete settings.breakSound;
     }
   } catch (e) { /* ignore corrupt storage */ }
   if (!Clocks.has(settings.clockStyle)) settings.clockStyle = "digital";
@@ -68,7 +75,8 @@
     restMin: $("restMin"), restMax: $("restMax"),
     autoStartFocus: $("autoStartFocus"), autoStartBreak: $("autoStartBreak"),
     clockStyle: $("clockStyle"),
-    focusSound: $("focusSound"), breakSound: $("breakSound"),
+    focusEndSound: $("focusEndSound"), breakEndSound: $("breakEndSound"),
+    alarmVolume: $("alarmVolume"), uiSounds: $("uiSounds"),
     bgUpload: $("bgUpload"), clearCustom: $("clearCustom"),
   };
 
@@ -86,8 +94,18 @@
 
   // short, encouraging lines — no longer spoil the random duration
   var PROMPTS = {
-    focus: ["Settle in.", "One gentle block.", "You've got this.", "Ease into the work."],
-    rest: ["Breathe.", "Let it drift.", "Rest well.", "Unclench your shoulders."],
+    focus: [
+      "Settle in.", "One gentle block.", "You've got this.", "Ease into the work.",
+      "Small steps count.", "Just this one thing.", "Begin softly.", "Follow the thread.",
+      "Stay with it.", "One breath, then start.", "Quiet mind, steady hands.", "Let the rest wait.",
+      "Curiosity over pressure.", "Progress, not perfection.",
+    ],
+    rest: [
+      "Breathe.", "Let it drift.", "Rest well.", "Unclench your shoulders.",
+      "Look out a window.", "Stretch, softly.", "Sip some water.", "Rest your eyes.",
+      "Let your mind wander.", "Roll your neck slowly.", "Stand and sway a little.", "Nothing to do now.",
+      "Soften your jaw.", "You earned this pause.",
+    ],
   };
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 
@@ -114,13 +132,12 @@
       state.total = randMinutes(settings.focusMin, settings.focusMax);
       el.phase.textContent = "Focus";
       el.note.textContent = pick(PROMPTS.focus);
-      Sounds.play(settings.focusSound);
     } else {
       state.total = randMinutes(settings.restMin, settings.restMax);
       el.phase.textContent = "Rest";
       el.note.textContent = pick(PROMPTS.rest);
-      Sounds.play(settings.breakSound);
     }
+    // starting a phase is silent — the alarm sounds when a phase *ends*
     state.remaining = state.total;
     startClock();
   }
@@ -159,10 +176,13 @@
       state.sessions += 1;
       updateSessionUI();
     }
+    // the alarm marks the END of the phase that just finished
+    Sounds.play(wasFocus ? settings.focusEndSound : settings.breakEndSound);
+
     var next = wasFocus ? "rest" : "focus";
     var autoStart = wasFocus ? settings.autoStartBreak : settings.autoStartFocus;
     if (autoStart) {
-      beginPhase(next); // this plays the appropriate sound for the new phase
+      beginPhase(next); // the next phase starts silently
     } else {
       // stop and let the user start the next phase manually
       state.running = false;
@@ -175,7 +195,6 @@
         : "Refreshed. Begin when ready.";
       el.start.textContent = "Start";
       render();
-      Sounds.play(wasFocus ? settings.breakSound : settings.focusSound);
     }
   }
 
@@ -266,15 +285,31 @@
 
   el.clockStyle.addEventListener("change", function () { applyClockStyle(el.clockStyle.value); persist(); });
 
-  el.focusSound.addEventListener("change", function () { settings.focusSound = el.focusSound.value; persist(); Sounds.play(settings.focusSound); });
-  el.breakSound.addEventListener("change", function () { settings.breakSound = el.breakSound.value; persist(); Sounds.play(settings.breakSound); });
+  el.focusEndSound.addEventListener("change", function () { settings.focusEndSound = el.focusEndSound.value; persist(); Sounds.play(settings.focusEndSound); });
+  el.breakEndSound.addEventListener("change", function () { settings.breakEndSound = el.breakEndSound.value; persist(); Sounds.play(settings.breakEndSound); });
+
+  el.alarmVolume.addEventListener("input", function () {
+    settings.volume = (parseInt(el.alarmVolume.value, 10) || 0) / 100;
+    Sounds.setVolume(settings.volume);
+    persist();
+  });
+  el.uiSounds.addEventListener("change", function () { settings.uiSounds = el.uiSounds.checked; persist(); });
 
   document.querySelectorAll("[data-preview]").forEach(function (btn) {
     btn.addEventListener("click", function () {
       Sounds.warmup();
       var which = btn.getAttribute("data-preview");
-      Sounds.play(which === "focus" ? settings.focusSound : settings.breakSound);
+      Sounds.play(which === "focusEnd" ? settings.focusEndSound : settings.breakEndSound);
     });
+  });
+
+  // soft, low tap on any button press — reassuring, not alerting
+  document.addEventListener("pointerdown", function (e) {
+    if (!settings.uiSounds) return;
+    if (e.target.closest("button, .scene-cell, .dock-thumb, label.upload-btn")) {
+      Sounds.warmup();
+      Sounds.tap();
+    }
   });
 
   // ---- clock style --------------------------------------------------------
@@ -405,8 +440,11 @@
     el.restMax.value = settings.restMax;
     el.autoStartFocus.checked = settings.autoStartFocus;
     el.autoStartBreak.checked = settings.autoStartBreak;
-    fillOptions(el.focusSound, Sounds.list(), settings.focusSound);
-    fillOptions(el.breakSound, Sounds.list(), settings.breakSound);
+    el.uiSounds.checked = settings.uiSounds;
+    el.alarmVolume.value = Math.round(settings.volume * 100);
+    Sounds.setVolume(settings.volume);
+    fillOptions(el.focusEndSound, Sounds.list(), settings.focusEndSound);
+    fillOptions(el.breakEndSound, Sounds.list(), settings.breakEndSound);
     fillOptions(el.clockStyle, Clocks.list(), settings.clockStyle);
 
     buildSceneChoosers();

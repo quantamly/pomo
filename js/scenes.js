@@ -83,6 +83,49 @@
     return out;
   }
 
+  function rainStreaks(count) {
+    var out = "", seed = 13;
+    function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+    for (var i = 0; i < count; i++) {
+      var x = rnd() * 1200;
+      var dur = (0.55 + rnd() * 0.5).toFixed(2);
+      var delay = (rnd() * 1.1).toFixed(2);
+      out += '<line class="rain-drop" x1="' + x.toFixed(0) + '" y1="-30" x2="' + (x - 9).toFixed(0) +
+        '" y2="8" style="animation-duration:' + dur + 's;animation-delay:-' + delay + 's"/>';
+    }
+    return out;
+  }
+
+  function fallingLeaves(count) {
+    var out = "", seed = 91;
+    function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+    var cols = ["#e8952f", "#d86b2c", "#e6b93f", "#c0501f", "#d98a3a"];
+    for (var i = 0; i < count; i++) {
+      var x = rnd() * 1200;
+      var dur = (6 + rnd() * 6).toFixed(1);
+      var delay = (rnd() * dur).toFixed(1);
+      var s = (0.7 + rnd() * 0.7).toFixed(2);
+      var c = cols[i % cols.length];
+      out += '<g transform="translate(' + x.toFixed(0) + ',0)">' +
+        '<g class="leaf" style="animation-duration:' + dur + 's;animation-delay:-' + delay + 's">' +
+        '<path transform="scale(' + s + ')" d="M0,-6 C6,-6 8,0 0,9 C-8,0 -6,-6 0,-6 Z" fill="' + c + '"/>' +
+        "</g></g>";
+    }
+    return out;
+  }
+
+  // a big monstera-ish frond that rests still, then sways once in a while
+  function frond(x, y, s, angle, c1, c2, delay) {
+    return '<g transform="translate(' + x + ',' + y + ') rotate(' + angle + ') scale(' + s + ')">' +
+      '<g class="sway-leaf" style="animation-delay:-' + delay + 's">' +
+      '<path d="M6,0 C-30,-60 -20,-150 6,-212 C34,-150 42,-60 6,0 Z" fill="' + c2 + '"/>' +
+      '<path d="M6,-6 C-12,-60 -8,-142 6,-196 C22,-142 26,-60 6,-6 Z" fill="' + c1 + '"/>' +
+      '<line x1="6" y1="-2" x2="6" y2="-198" stroke="' + c2 + '" stroke-width="2"/>' +
+      '<path d="M6,-46 l-18,-12 M6,-92 l-20,-10 M6,-134 l-18,-9 M6,-46 l18,-12 M6,-92 l20,-10 M6,-134 l18,-9" ' +
+      'stroke="' + c2 + '" stroke-width="6" stroke-linecap="round" opacity="0.55"/>' +
+      "</g></g>";
+  }
+
   function frame(defs, body) {
     return (
       '<svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">' +
@@ -237,6 +280,73 @@
           pine(160, 700, 0.85, "#0a1226", "#070d1c") +
           pine(940, 710, 1.0, "#0a1226", "#070d1c") +
           fireflies(10, 1200, 800);
+        return frame(defs, body);
+      },
+    },
+    {
+      id: "rain",
+      name: "Rain",
+      mood: "light",
+      svg: function () {
+        var defs =
+          '<linearGradient id="rSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a9bb0"/><stop offset="0.6" stop-color="#aeb9c4"/><stop offset="1" stop-color="#cdd4d8"/></linearGradient>' +
+          '<linearGradient id="rHillA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7f9a83"/><stop offset="1" stop-color="#6a8670"/></linearGradient>' +
+          '<linearGradient id="rHillB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5f7d68"/><stop offset="1" stop-color="#4e6b58"/></linearGradient>';
+        var body =
+          '<rect width="1200" height="800" fill="url(#rSky)"/>' +
+          cloud(300, 150, 1.5, 90, "rgba(120,132,146,0.85)", 10) +
+          cloud(760, 110, 1.7, 110, "rgba(108,120,134,0.82)", 50) +
+          cloud(1010, 200, 1.2, 80, "rgba(130,142,156,0.8)", 30) +
+          '<path d="M0,560 Q300,500 620,560 T1200,540 V800 H0 Z" fill="url(#rHillA)"/>' +
+          '<path d="M0,660 Q360,600 760,660 T1200,640 V800 H0 Z" fill="url(#rHillB)"/>' +
+          roundTree(940, 620, 0.9, { trunk: "#5c6b52", leafDark: "#3f5a3a", leaf: "#537a4a", leafLight: "#6a9060" }) +
+          '<g>' + rainStreaks(60) + "</g>";
+        return frame(defs, body);
+      },
+    },
+    {
+      id: "autumn",
+      name: "Autumn",
+      mood: "light",
+      svg: function () {
+        var defs =
+          '<linearGradient id="aSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6c98a"/><stop offset="0.55" stop-color="#f4b56f"/><stop offset="1" stop-color="#eecb96"/></linearGradient>' +
+          '<radialGradient id="aGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff2cf"/><stop offset="1" stop-color="#fff2cf" stop-opacity="0"/></radialGradient>';
+        var body =
+          '<rect width="1200" height="800" fill="url(#aSky)"/>' +
+          '<circle cx="900" cy="200" r="230" fill="url(#aGlow)"/>' +
+          '<circle class="scene-sun" cx="900" cy="200" r="70" fill="#fff0c4"/>' +
+          cloud(280, 150, 1.0, 110, "rgba(255,225,190,0.7)", 20) +
+          '<path d="M0,580 Q300,520 620,580 T1200,560 V800 H0 Z" fill="#c98a4a"/>' +
+          '<path d="M0,660 Q360,610 760,660 T1200,650 V800 H0 Z" fill="#a86a34"/>' +
+          roundTree(200, 640, 1.1, { trunk: "#7a4a2a", leafDark: "#b85a1e", leaf: "#e0872b", leafLight: "#f0b53f" }) +
+          roundTree(1000, 650, 1.2, { trunk: "#7a4a2a", leafDark: "#a84a1e", leaf: "#d8702b", leafLight: "#eaa53f" }) +
+          '<path d="M0,730 Q400,680 820,730 T1200,715 V800 H0 Z" fill="#8a5628"/>' +
+          "<g>" + fallingLeaves(16) + "</g>";
+        return frame(defs, body);
+      },
+    },
+    {
+      id: "tropical",
+      name: "Tropical garden",
+      mood: "light",
+      svg: function () {
+        var defs =
+          '<linearGradient id="tSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd6e0"/><stop offset="0.6" stop-color="#bfeede"/><stop offset="1" stop-color="#e7f7d9"/></linearGradient>' +
+          '<linearGradient id="tHillA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f9e5a"/><stop offset="1" stop-color="#3d8a49"/></linearGradient>' +
+          '<linearGradient id="tHillB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a7f47"/><stop offset="1" stop-color="#2c6a39"/></linearGradient>';
+        var body =
+          '<rect width="1200" height="800" fill="url(#tSky)"/>' +
+          '<circle class="scene-sun" cx="960" cy="150" r="60" fill="#fff6d0"/>' +
+          cloud(300, 140, 1.1, 120, "rgba(255,255,255,0.82)", 20) +
+          '<path d="M0,560 Q300,500 620,560 T1200,540 V800 H0 Z" fill="url(#tHillA)"/>' +
+          '<path d="M0,660 Q360,600 760,660 T1200,650 V800 H0 Z" fill="url(#tHillB)"/>' +
+          frond(70, 800, 1.5, 16, "#3f9a50", "#2f7d3f", 0) +
+          frond(1140, 800, 1.6, -20, "#3a8f49", "#2a713a", 3) +
+          frond(30, 810, 1.1, 40, "#49a457", "#357f45", 6) +
+          frond(1175, 815, 1.2, -44, "#409a52", "#2f7a40", 1.5) +
+          '<circle cx="250" cy="700" r="11" fill="#ef7d9d"/><circle cx="250" cy="700" r="4" fill="#ffd94f"/>' +
+          '<circle cx="980" cy="720" r="11" fill="#f2a24a"/><circle cx="980" cy="720" r="4" fill="#ffe27a"/>';
         return frame(defs, body);
       },
     },
