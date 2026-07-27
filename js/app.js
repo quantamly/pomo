@@ -10,14 +10,17 @@
 
   var SCENES = window.NariScenes;
   var Sounds = window.NariSounds;
+  var Clocks = window.NariClocks;
   var STORE_KEY = "nari.settings.v1";
-  var RING_LEN = 2 * Math.PI * 110; // matches r=110 in the SVG
+  var BASE_TITLE = "Nari — a calm random pomodoro";
 
   // ---- persistent settings ------------------------------------------------
   var settings = {
     focusMin: 20, focusMax: 30,
     restMin: 5, restMax: 10,
-    autoCycle: true,
+    autoStartFocus: true,
+    autoStartBreak: true,
+    clockStyle: "digital",
     focusSound: "marimba",
     breakSound: "chime",
     scene: "meadow",
@@ -25,8 +28,18 @@
   };
   try {
     var saved = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (saved) Object.assign(settings, saved);
+    if (saved) {
+      Object.assign(settings, saved);
+      // migrate the old single "flow automatically" toggle
+      if (saved.autoCycle !== undefined &&
+          saved.autoStartFocus === undefined && saved.autoStartBreak === undefined) {
+        settings.autoStartFocus = saved.autoCycle;
+        settings.autoStartBreak = saved.autoCycle;
+      }
+      delete settings.autoCycle;
+    }
   } catch (e) { /* ignore corrupt storage */ }
+  if (!Clocks.has(settings.clockStyle)) settings.clockStyle = "digital";
 
   function persist() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(settings)); } catch (e) {}
@@ -38,9 +51,8 @@
     body: document.body,
     scene: $("scene"),
     phase: $("phaseLabel"),
-    clock: $("clock"),
+    dial: $("dial"),
     note: $("clockNote"),
-    ring: $("ringProgress"),
     start: $("startBtn"),
     skip: $("skipBtn"),
     reset: $("resetBtn"),
@@ -54,7 +66,8 @@
     closeSettings: $("closeSettings"),
     focusMin: $("focusMin"), focusMax: $("focusMax"),
     restMin: $("restMin"), restMax: $("restMax"),
-    autoCycle: $("autoCycle"),
+    autoStartFocus: $("autoStartFocus"), autoStartBreak: $("autoStartBreak"),
+    clockStyle: $("clockStyle"),
     focusSound: $("focusSound"), breakSound: $("breakSound"),
     bgUpload: $("bgUpload"), clearCustom: $("clearCustom"),
   };
@@ -64,11 +77,19 @@
     phase: "idle",     // idle | focus | rest
     running: false,
     endAt: 0,          // timestamp the current phase ends
-    remaining: 0,      // ms left when paused
+    remaining: 0,      // ms left
     total: 0,          // ms of the current phase
     sessions: 0,       // completed focus blocks
+    pendingNext: null, // phase queued while idle
     tick: null,
   };
+
+  // short, encouraging lines — no longer spoil the random duration
+  var PROMPTS = {
+    focus: ["Settle in.", "One gentle block.", "You've got this.", "Ease into the work."],
+    rest: ["Breathe.", "Let it drift.", "Rest well.", "Unclench your shoulders."],
+  };
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 
   function randMinutes(min, max) {
     min = Math.max(1, Math.min(min, max));
@@ -86,27 +107,18 @@
     return (m < 10 ? "0" : "") + m + ":" + (r < 10 ? "0" : "") + r;
   }
 
-  function humanMinutes(ms) {
-    var m = Math.round(ms / 60000);
-    var s = Math.round(ms / 1000) % 60;
-    if (s === 0) return m + " min";
-    return m + " min " + s + " s";
-  }
-
   // ---- phase control ------------------------------------------------------
   function beginPhase(phase) {
     state.phase = phase;
     if (phase === "focus") {
       state.total = randMinutes(settings.focusMin, settings.focusMax);
       el.phase.textContent = "Focus";
-      el.note.textContent = "A " + humanMinutes(state.total) + " focus, drawn from " +
-        settings.focusMin + "–" + settings.focusMax + " min";
+      el.note.textContent = pick(PROMPTS.focus);
       Sounds.play(settings.focusSound);
     } else {
       state.total = randMinutes(settings.restMin, settings.restMax);
       el.phase.textContent = "Rest";
-      el.note.textContent = "A " + humanMinutes(state.total) + " break, drawn from " +
-        settings.restMin + "–" + settings.restMax + " min";
+      el.note.textContent = pick(PROMPTS.rest);
       Sounds.play(settings.breakSound);
     }
     state.remaining = state.total;
@@ -148,32 +160,39 @@
       updateSessionUI();
     }
     var next = wasFocus ? "rest" : "focus";
-    if (settings.autoCycle) {
+    var autoStart = wasFocus ? settings.autoStartBreak : settings.autoStartFocus;
+    if (autoStart) {
       beginPhase(next); // this plays the appropriate sound for the new phase
     } else {
       // stop and let the user start the next phase manually
       state.running = false;
       state.phase = "idle";
       state.pendingNext = next;
+      state.remaining = 0;
       el.phase.textContent = wasFocus ? "Break time" : "Ready";
       el.note.textContent = wasFocus
-        ? "Nice work. Start when you're ready to rest."
-        : "Rested. Start your next focus block.";
-      el.clock.textContent = fmt(0);
+        ? "Nice work — rest when you're ready."
+        : "Refreshed. Begin when ready.";
       el.start.textContent = "Start";
-      setRing(0);
+      render();
       Sounds.play(wasFocus ? settings.breakSound : settings.focusSound);
     }
   }
 
   function render() {
-    el.clock.textContent = fmt(state.remaining);
     var frac = state.total > 0 ? state.remaining / state.total : 0;
-    setRing(frac);
+    Clocks.update(el.dial, frac, state.remaining, state.running, state.phase);
+    updateTitle();
   }
 
-  function setRing(frac) {
-    el.ring.style.strokeDashoffset = RING_LEN * (1 - frac);
+  function updateTitle() {
+    if (state.phase === "idle" || state.total === 0) {
+      document.title = BASE_TITLE;
+      return;
+    }
+    var name = state.phase === "focus" ? "Focus" : "Rest";
+    var prefix = state.running ? "" : "⏸ ";
+    document.title = prefix + fmt(state.remaining) + " · " + name + " — Nari";
   }
 
   function updateSessionUI() {
@@ -201,7 +220,7 @@
 
   el.skip.addEventListener("click", function () {
     Sounds.warmup();
-    if (state.phase === "idle") { beginPhase("focus"); return; }
+    if (state.phase === "idle") { beginPhase(state.pendingNext || "focus"); return; }
     completePhase();
   });
 
@@ -210,11 +229,14 @@
       // full reset back to a fresh focus block
       state.sessions = 0;
       state.pendingNext = null;
+      state.phase = "idle";
+      state.total = randMinutes(settings.focusMin, settings.focusMax);
+      state.remaining = state.total;
       el.phase.textContent = "Ready";
-      el.note.textContent = "Press start to begin";
-      el.clock.textContent = fmt(0);
-      setRing(1);
+      el.note.textContent = "Whenever you're ready.";
+      el.start.textContent = "Start";
       updateSessionUI();
+      render();
       return;
     }
     // restart the current phase with a fresh random draw
@@ -238,7 +260,11 @@
   el.focusMax.addEventListener("change", function () { clampRange(el.focusMin, el.focusMax, "focusMin", "focusMax", 1, 180); });
   el.restMin.addEventListener("change", function () { clampRange(el.restMin, el.restMax, "restMin", "restMax", 1, 120); });
   el.restMax.addEventListener("change", function () { clampRange(el.restMin, el.restMax, "restMin", "restMax", 1, 120); });
-  el.autoCycle.addEventListener("change", function () { settings.autoCycle = el.autoCycle.checked; persist(); });
+
+  el.autoStartFocus.addEventListener("change", function () { settings.autoStartFocus = el.autoStartFocus.checked; persist(); });
+  el.autoStartBreak.addEventListener("change", function () { settings.autoStartBreak = el.autoStartBreak.checked; persist(); });
+
+  el.clockStyle.addEventListener("change", function () { applyClockStyle(el.clockStyle.value); persist(); });
 
   el.focusSound.addEventListener("change", function () { settings.focusSound = el.focusSound.value; persist(); Sounds.play(settings.focusSound); });
   el.breakSound.addEventListener("change", function () { settings.breakSound = el.breakSound.value; persist(); Sounds.play(settings.breakSound); });
@@ -250,6 +276,13 @@
       Sounds.play(which === "focus" ? settings.focusSound : settings.breakSound);
     });
   });
+
+  // ---- clock style --------------------------------------------------------
+  function applyClockStyle(id) {
+    settings.clockStyle = Clocks.setStyle(id, el.dial);
+    el.dial.setAttribute("data-style", settings.clockStyle);
+    render();
+  }
 
   // ---- background handling ------------------------------------------------
   function applyScene(id) {
@@ -354,12 +387,12 @@
   });
 
   // ---- init ---------------------------------------------------------------
-  function fillSounds(selectEl, current) {
-    Sounds.list().forEach(function (s) {
+  function fillOptions(selectEl, items, current) {
+    items.forEach(function (it) {
       var opt = document.createElement("option");
-      opt.value = s.id;
-      opt.textContent = s.label;
-      if (s.id === current) opt.selected = true;
+      opt.value = it.id;
+      opt.textContent = it.label || it.name;
+      if (it.id === current) opt.selected = true;
       selectEl.appendChild(opt);
     });
   }
@@ -370,9 +403,11 @@
     el.focusMax.value = settings.focusMax;
     el.restMin.value = settings.restMin;
     el.restMax.value = settings.restMax;
-    el.autoCycle.checked = settings.autoCycle;
-    fillSounds(el.focusSound, settings.focusSound);
-    fillSounds(el.breakSound, settings.breakSound);
+    el.autoStartFocus.checked = settings.autoStartFocus;
+    el.autoStartBreak.checked = settings.autoStartBreak;
+    fillOptions(el.focusSound, Sounds.list(), settings.focusSound);
+    fillOptions(el.breakSound, Sounds.list(), settings.breakSound);
+    fillOptions(el.clockStyle, Clocks.list(), settings.clockStyle);
 
     buildSceneChoosers();
     if (settings.scene === "__custom" && settings.customBg) {
@@ -381,10 +416,13 @@
       applyScene(settings.scene);
     }
 
+    // seed an idle focus block so the chosen clock face shows a full time
+    state.phase = "idle";
+    state.total = randMinutes(settings.focusMin, settings.focusMax);
+    state.remaining = state.total;
     el.session.textContent = "Session 1";
-    setRing(1);
-    el.clock.textContent = fmt(randMinutes(settings.focusMin, settings.focusMax));
-    el.note.textContent = "Press start to begin";
+    el.note.textContent = "Whenever you're ready.";
+    applyClockStyle(settings.clockStyle); // builds the dial + first render
 
     // keep the countdown honest after the tab returns to the foreground
     document.addEventListener("visibilitychange", function () {

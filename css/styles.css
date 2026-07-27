@@ -163,20 +163,19 @@ body[data-mood="dark"] .scene-veil {
   display: grid;
   place-items: center;
 }
-.ring { position: absolute; inset: 0; transform: rotate(-90deg); overflow: visible; }
+/* progress ring shared by the digital + LCD faces */
+.face-ring { position: absolute; inset: 0; transform: rotate(-90deg); overflow: visible; }
 .ring-track { fill: none; stroke: var(--ring-track); stroke-width: 8; }
 .ring-progress {
   fill: none;
   stroke: var(--accent);
   stroke-width: 8;
   stroke-linecap: round;
-  stroke-dasharray: 691.15;   /* 2πr, r=110 */
-  stroke-dashoffset: 0;
   transition: stroke-dashoffset 0.35s linear, stroke 0.6s ease;
   filter: drop-shadow(0 0 6px var(--accent-soft));
 }
 
-.clock-wrap { display: grid; gap: 4px; }
+.clock-wrap { display: grid; gap: 4px; position: relative; z-index: 1; }
 .clock {
   font-family: var(--font-display);
   font-weight: 500;
@@ -186,11 +185,106 @@ body[data-mood="dark"] .scene-veil {
   font-variant-numeric: tabular-nums;
   color: var(--glass-ink);
 }
+.clock-minimal { font-weight: 400; font-size: clamp(3.8rem, 18vw, 5.6rem); letter-spacing: -0.01em; }
+
 .clock-note {
   font-size: 0.82rem;
   color: var(--glass-ink-dim);
   min-height: 1.1em;
+  margin: 0 auto 22px;
   padding: 0 8px;
+  text-align: center;
+}
+
+/* ---------- LCD (seven-segment) face ---------- */
+.lcd {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 2.4vw, 12px);
+  color: var(--accent);
+}
+.lcd-digit {
+  position: relative;
+  width: clamp(30px, 11vw, 46px);
+  height: clamp(52px, 19vw, 80px);
+}
+.lcd .seg {
+  position: absolute;
+  background: currentColor;
+  border-radius: 2px;
+  opacity: 0.12;
+  transition: opacity 0.18s ease;
+}
+.lcd .seg.on { opacity: 1; filter: drop-shadow(0 0 3px var(--accent-soft)); }
+/* horizontal + vertical segment geometry */
+.lcd .seg-a, .lcd .seg-g, .lcd .seg-d { left: 18%; right: 18%; height: 10%; }
+.lcd .seg-a { top: 0; }
+.lcd .seg-g { top: 45%; }
+.lcd .seg-d { bottom: 0; }
+.lcd .seg-f, .lcd .seg-b, .lcd .seg-e, .lcd .seg-c { width: 12%; height: 36%; }
+.lcd .seg-f { top: 6%; left: 4%; }
+.lcd .seg-b { top: 6%; right: 4%; }
+.lcd .seg-e { bottom: 6%; left: 4%; }
+.lcd .seg-c { bottom: 6%; right: 4%; }
+.lcd-colon { display: flex; flex-direction: column; justify-content: center; gap: clamp(10px, 4vw, 18px); }
+.lcd-colon i { width: clamp(6px, 2vw, 9px); height: clamp(6px, 2vw, 9px); border-radius: 50%; background: var(--accent); }
+
+/* ---------- Analog face ---------- */
+.face-analog { position: absolute; inset: 0; }
+.analog-bg { fill: rgba(255, 255, 255, 0.10); stroke: var(--glass-border); stroke-width: 1.5; }
+body[data-mood="dark"] .analog-bg { fill: rgba(255, 255, 255, 0.06); }
+.analog-arc {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 6;
+  stroke-linecap: round;
+  opacity: 0.85;
+  transition: stroke-dashoffset 0.35s linear;
+}
+.tick { stroke: var(--glass-ink-dim); stroke-width: 1.5; }
+.tick-lg { stroke: var(--glass-ink); stroke-width: 2.6; }
+.hand { stroke: var(--glass-ink); stroke-linecap: round; transition: transform 0.28s cubic-bezier(0.3, 0.8, 0.3, 1); }
+.hand-min { stroke-width: 5; }
+.hand-sec { stroke-width: 2.4; stroke: var(--accent); }
+.analog-cap { fill: var(--accent); }
+
+/* ---------- Hourglass face ---------- */
+.face-hg { position: absolute; inset: 0; }
+.hg-glass { fill: rgba(255, 255, 255, 0.08); stroke: var(--glass-ink-dim); stroke-width: 2; stroke-linejoin: round; }
+.hg-cap { fill: var(--glass-ink); opacity: 0.55; }
+.hg-sand { fill: var(--accent); transition: y 0.25s linear, height 0.25s linear; }
+.hg-stream { fill: var(--accent); animation: hgShimmer 0.7s ease-in-out infinite; }
+@keyframes hgShimmer { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.hg-time {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2rem, 8vw, 2.6rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--glass-ink);
+  background: var(--glass-bg);
+  padding: 4px 14px;
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.dial:hover .hg-time, .dial:focus-within .hg-time { opacity: 1; }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ---------- Controls ---------- */
@@ -492,7 +586,7 @@ input:focus-visible, .select:focus-visible, .btn:focus-visible,
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
-  .scene-anim { animation: none !important; }
+  .scene-anim, .hg-stream { animation: none !important; }
 }
 
 @media (max-width: 480px) {

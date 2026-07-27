@@ -19,8 +19,13 @@ Open `index.html` in any browser. No build step, no dependencies, no server.
   marimba, water drops, deep gong, soft tone), generated live with the Web Audio
   API. Pick one for when focus begins and another for when a break begins, with
   a preview button for each.
-- **Auto-flow or manual** — let focus and rest cycle automatically, or start each
-  block yourself.
+- **Five clock faces** — Rounded digital, a **live hourglass** (sand drains as
+  time passes; hover to reveal the exact time), an **analog** face, a quiet
+  **minimal** number, and a retro **LCD segment** display.
+- **Independent auto-start** — separately choose whether focus sessions and
+  breaks start on their own, or start each block yourself.
+- **Glanceable from another tab** — the remaining time and phase show live in the
+  browser tab title.
 - Settings and your chosen scene persist between visits (localStorage).
 - Respects `prefers-reduced-motion`; keyboard-friendly (Space starts/pauses,
   Esc closes settings).
@@ -32,6 +37,7 @@ index.html      markup + layout
 css/styles.css  theme, glass UI, ambient scene animations
 js/scenes.js    the six SVG nature scenes
 js/sounds.js    Web Audio alarm synthesis
+js/clocks.js    the five selectable clock faces
 js/app.js       the random pomodoro engine + UI wiring
 ```
 
