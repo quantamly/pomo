@@ -67,11 +67,17 @@
     session: $("sessionCount"),
     leaf: $("leafTrail"),
     dock: $("sceneDock"),
+    scenePicker: $("scenePicker"),
+    sceneToggle: $("sceneToggle"),
     grid: $("sceneGrid"),
     panel: $("panel"),
     scrim: $("scrim"),
     openSettings: $("openSettings"),
     closeSettings: $("closeSettings"),
+    openInfo: $("openInfo"),
+    closeInfo: $("closeInfo"),
+    infoModal: $("infoModal"),
+    infoScrim: $("infoScrim"),
     focusMin: $("focusMin"), focusMax: $("focusMax"),
     restMin: $("restMin"), restMax: $("restMax"),
     autoStartFocus: $("autoStartFocus"), autoStartBreak: $("autoStartBreak"),
@@ -308,13 +314,15 @@
     });
   });
 
-  // soft, low tap on any button press — reassuring, not alerting
+  // interface sounds: the rewarding "pop" only for the primary action,
+  // a low unobtrusive "tock" for every other button
   document.addEventListener("pointerdown", function (e) {
     if (!settings.uiSounds) return;
-    if (e.target.closest("button, .scene-cell, .dock-thumb, label.upload-btn")) {
-      Sounds.warmup();
-      Sounds.tap();
-    }
+    var target = e.target.closest("button, .scene-cell, .dock-thumb, label.upload-btn");
+    if (!target) return;
+    Sounds.warmup();
+    if (target.id === "startBtn") Sounds.tap();
+    else Sounds.tock();
   });
 
   // ---- clock style --------------------------------------------------------
@@ -352,6 +360,18 @@
       c.setAttribute("aria-pressed", String(c.dataset.scene === settings.scene));
     });
     el.clearCustom.hidden = !settings.customBg;
+    // the compact toggle shows the active scene
+    if (settings.scene === "__custom" && settings.customBg) {
+      el.sceneToggle.style.backgroundImage = "url(" + settings.customBg + ")";
+    } else {
+      var sc = SCENES.find(function (s) { return s.id === settings.scene; }) || SCENES[0];
+      el.sceneToggle.style.backgroundImage = thumbDataUri(sc);
+    }
+  }
+
+  function collapsePicker() {
+    el.scenePicker.classList.remove("open");
+    el.sceneToggle.setAttribute("aria-expanded", "false");
   }
 
   // small static preview (no animation) for thumbnails
@@ -369,7 +389,7 @@
       dot.style.backgroundImage = uri;
       dot.title = sc.name;
       dot.setAttribute("aria-label", "Scene: " + sc.name);
-      dot.addEventListener("click", function () { applyScene(sc.id); });
+      dot.addEventListener("click", function () { applyScene(sc.id); collapsePicker(); });
       el.dock.appendChild(dot);
 
       var cell = document.createElement("button");
@@ -402,6 +422,18 @@
     applyScene(SCENES[0].id);
   });
 
+  // ---- compact scene picker open/close -----------------------------------
+  el.sceneToggle.addEventListener("click", function (e) {
+    e.stopPropagation();
+    var open = el.scenePicker.classList.toggle("open");
+    el.sceneToggle.setAttribute("aria-expanded", String(open));
+  });
+  document.addEventListener("click", function (e) {
+    if (el.scenePicker.classList.contains("open") && !el.scenePicker.contains(e.target)) {
+      collapsePicker();
+    }
+  });
+
   // ---- settings drawer open/close ----------------------------------------
   function openPanel() {
     el.panel.hidden = false;
@@ -416,7 +448,25 @@
   el.openSettings.addEventListener("click", openPanel);
   el.closeSettings.addEventListener("click", closePanel);
   el.scrim.addEventListener("click", closePanel);
+
+  // ---- info modal open/close ---------------------------------------------
+  function openInfo() {
+    el.infoModal.hidden = false;
+    el.infoScrim.hidden = false;
+    el.closeInfo.focus();
+  }
+  function closeInfo() {
+    el.infoModal.hidden = true;
+    el.infoScrim.hidden = true;
+    el.openInfo.focus();
+  }
+  el.openInfo.addEventListener("click", openInfo);
+  el.closeInfo.addEventListener("click", closeInfo);
+  el.infoScrim.addEventListener("click", closeInfo);
+
   document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") collapsePicker();
+    if (e.key === "Escape" && !el.infoModal.hidden) closeInfo();
     if (e.key === "Escape" && !el.panel.hidden) closePanel();
     // space toggles start/pause when not typing in a field
     if (e.code === "Space" && document.activeElement.tagName !== "INPUT" &&

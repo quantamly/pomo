@@ -23,9 +23,12 @@
       <span class="brand-mark" aria-hidden="true">🍃</span>
       <span class="brand-name">Nari</span>
     </div>
-    <button id="openSettings" class="ghost-btn" aria-haspopup="dialog" aria-controls="panel">
-      <span class="gear" aria-hidden="true">✦</span> Settings
-    </button>
+    <div class="topbar-actions">
+      <button id="openInfo" class="ghost-btn ghost-icon" aria-haspopup="dialog" aria-controls="infoModal" aria-label="Why Nari works">?</button>
+      <button id="openSettings" class="ghost-btn" aria-haspopup="dialog" aria-controls="panel">
+        <span class="gear" aria-hidden="true">✦</span> Settings
+      </button>
+    </div>
   </header>
 
   <!-- The hero: the timer -->
@@ -57,8 +60,17 @@
     </section>
   </main>
 
-  <!-- Scene quick-switcher -->
-  <nav class="scene-dock" id="sceneDock" aria-label="Choose a background scene"></nav>
+  <!-- Scene quick-switcher (compact, expands on demand) -->
+  <div class="scene-picker" id="scenePicker">
+    <button class="scene-toggle" id="sceneToggle" aria-expanded="false" aria-controls="sceneDock" aria-label="Change background">
+      <span class="scene-toggle-glyph" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6l4-3 4 3 4-3 4 3v13l-4 3-4-3-4 3-4-3z" /><path d="M3 10h18M9 3v18" />
+        </svg>
+      </span>
+    </button>
+    <nav class="scene-dock" id="sceneDock" aria-label="Choose a background scene"></nav>
+  </div>
 
   <!-- Settings drawer -->
   <div class="scrim" id="scrim" hidden></div>
@@ -143,6 +155,33 @@
         <button id="clearCustom" class="linklike" hidden>Remove custom background</button>
       </section>
     </div>
+  </aside>
+
+  <!-- Info / methodology -->
+  <div class="scrim" id="infoScrim" hidden></div>
+  <aside class="info-modal glass" id="infoModal" role="dialog" aria-modal="true" aria-labelledby="infoTitle" hidden>
+    <div class="info-head">
+      <h2 id="infoTitle">Why Nari works</h2>
+      <button id="closeInfo" class="ghost-btn ghost-icon" aria-label="Close">✕</button>
+    </div>
+    <dl class="info-list">
+      <div>
+        <dt>Focus in sprints.</dt>
+        <dd>One bounded block of attention, then a real break. Short, finite effort beats endless willpower — and breaks keep your mind fresh.</dd>
+      </div>
+      <div>
+        <dt>Let the clock surprise you.</dt>
+        <dd>Fixed timers make you clock-watch. Nari draws each focus and break at random from your range, so you just work until the bell.</dd>
+      </div>
+      <div>
+        <dt>Calm on purpose.</dt>
+        <dd>Soft nature scenes and gentle chimes lower arousal — easier to drop in, easier to step away without a jolt.</dd>
+      </div>
+      <div>
+        <dt>Tiny rewards.</dt>
+        <dd>Fresh lines and little pop-ups add unpredictable delight, so returning to focus feels good, not grim.</dd>
+      </div>
+    </dl>
   </aside>
 
   <script src="js/scenes.js"></script>

@@ -172,18 +172,23 @@
       var ac = audio();
       fn(ac, ac.currentTime + 0.02);
     },
-    // A bright, rising "pop" for button presses. Grounded in how the brain
-    // reads sound: a fast RISING pitch contour and a consonant sparkle partial
-    // signal positive valence/reward, a snappy 2 ms attack reads as crisp and
-    // "activating", and mid-range (not sub-bass) frequencies actually cut
-    // through — so the tap feels satisfying instead of low-key.
+    // Warm, satisfying "pop" for the ONE primary action (Start/Pause/Resume).
+    // A gentle rising contour still reads as positive/rewarding, but it's
+    // lowpass-softened and low on bright harmonics so it feels pleasant rather
+    // than alarming.
     tap: function () {
       var ac = audio();
       var t = ac.currentTime + 0.004;
-      // punchy body: quick upward glide of ~a fifth
-      voice(ac, { start: t, freq: 440, glideTo: 680, dur: 0.13, gain: 0.32, attack: 0.002, type: "triangle" });
-      // bright octave sparkle for crispness/lift
-      voice(ac, { start: t, freq: 1320, glideTo: 1660, dur: 0.09, gain: 0.12, attack: 0.002, type: "sine" });
+      voice(ac, { start: t, freq: 360, glideTo: 500, dur: 0.14, gain: 0.26, attack: 0.003, type: "sine", filter: "lowpass", filterFreq: 1400 });
+      // faint, mellow overtone for a touch of body (no bright sparkle)
+      voice(ac, { start: t, freq: 720, glideTo: 1000, dur: 0.07, gain: 0.05, attack: 0.003, type: "sine", filter: "lowpass", filterFreq: 1400 });
+    },
+
+    // Low, dull "tock" for every other button — unobtrusive, not a reward.
+    tock: function () {
+      var ac = audio();
+      var t = ac.currentTime + 0.004;
+      voice(ac, { start: t, freq: 104, glideTo: 80, dur: 0.07, gain: 0.11, attack: 0.002, type: "sine", filter: "lowpass", filterFreq: 360 });
     },
     setVolume: function (v) {
       volume = Math.max(0, Math.min(1, v));

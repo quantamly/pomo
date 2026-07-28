@@ -10,7 +10,7 @@
   "use strict";
 
   var RING_R = 110;
-  var RING_LEN = 2 * Math.PI * RING_R;      // digital / lcd progress ring
+  var RING_LEN = 2 * Math.PI * RING_R;      // digital face progress ring
   var ARC_R = 104;
   var ARC_LEN = 2 * Math.PI * ARC_R;        // analog depleting arc
 
@@ -18,24 +18,6 @@
   function fmt(ms) {
     var s = Math.max(0, Math.round(ms / 1000));
     return pad(Math.floor(s / 60)) + ":" + pad(s % 60);
-  }
-
-  // seven-segment lamp map: which segments (a..g) are lit per digit
-  var SEG = {
-    "0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc",
-    "5": "afgcd", "6": "afgecd", "7": "abc", "8": "abcdefg", "9": "abcdfg",
-  };
-  function segSpans() {
-    return "abcdefg".split("").map(function (s) {
-      return '<span class="seg seg-' + s + '"></span>';
-    }).join("");
-  }
-  function setDigit(cell, ch) {
-    var on = SEG[ch] || "";
-    cell.querySelectorAll(".seg").forEach(function (span) {
-      var name = span.className.match(/seg-([a-g])/)[1];
-      span.classList.toggle("on", on.indexOf(name) !== -1);
-    });
   }
 
   var ringSvg =
@@ -63,27 +45,6 @@
       update: function (dial, frac, ms) {
         setRing(this.ring, frac);
         this.num.textContent = fmt(ms);
-      },
-    },
-
-    lcd: {
-      id: "lcd", name: "LCD segment",
-      build: function (dial) {
-        dial.innerHTML = ringSvg +
-          '<div class="lcd" data-lcd>' +
-          '<span class="lcd-digit">' + segSpans() + "</span>" +
-          '<span class="lcd-digit">' + segSpans() + "</span>" +
-          '<span class="lcd-colon"><i></i><i></i></span>' +
-          '<span class="lcd-digit">' + segSpans() + "</span>" +
-          '<span class="lcd-digit">' + segSpans() + "</span>" +
-          "</div>";
-        this.ring = dial.querySelector(".ring-progress");
-        this.cells = dial.querySelectorAll(".lcd-digit");
-      },
-      update: function (dial, frac, ms) {
-        setRing(this.ring, frac);
-        var t = fmt(ms).replace(":", ""); // 4 chars MMSS
-        for (var i = 0; i < 4; i++) setDigit(this.cells[i], t[i]);
       },
     },
 
@@ -207,7 +168,7 @@
     },
   };
 
-  var ORDER = ["digital", "hourglass", "analog", "minimal", "lcd"];
+  var ORDER = ["digital", "hourglass", "analog", "minimal"];
   var active = STYLES.digital;
 
   window.NariClocks = {

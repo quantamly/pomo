@@ -14,17 +14,21 @@ Open `index.html` in any browser. No build step, no dependencies, no server.
 - **Nine painterly scenes** — Meadow, Sunset, Cloud sea, Forest, Twilight,
   Starry night, Rain, Autumn (drifting golden leaves) and a Tropical garden
   (fronds that sway now and then), all drawn as inline SVG. No image files.
+  Picked from a compact toggle on the left that expands on demand.
 - **Bring your own background** — upload any image to use as your backdrop.
 - **Synthesized alarms** — thirteen soft tones (wind chime, marimba, singing
   bowl, koto, music box, temple bell, birdsong, water drops, rain stick, wood
   block, rising chime, deep gong, soft tone), generated live with the Web Audio
   API. Set one for **when focus ends** and one for **when a break ends**, each
   with a preview, plus an **alarm volume** slider.
-- **Satisfying interface sounds** — a bright, rising "pop" on button presses
-  (a positive-valence, rewarding contour), toggleable.
-- **Five clock faces** — Rounded digital, a **live hourglass** (sand streams
+- **Two-tier interface sounds** — a warm, rewarding "pop" only for the primary
+  Start/Pause/Resume, and a low, unobtrusive "tock" for every other button
+  (toggleable).
+- **Four clock faces** — Rounded digital, a **live hourglass** (sand streams
   from the neck onto a growing pile; hover to reveal the exact time), an
-  **analog** face, a quiet **minimal** number, and a retro **LCD segment**.
+  **analog** face, and a quiet **minimal** number.
+- **A "?" panel** — a short "Why Nari works" explaining the method (focus in
+  sprints, randomized intervals, calm on purpose, tiny rewards).
 - **Independent auto-start** — separately choose whether focus sessions and
   breaks start on their own, or start each block yourself.
 - **Color that follows the phase** — the clock and main button shift hue by state
@@ -48,7 +52,7 @@ index.html      markup + layout
 css/styles.css  theme, glass UI, ambient scene animations
 js/scenes.js    the nine SVG nature scenes
 js/sounds.js    Web Audio alarm synthesis (master volume, tap)
-js/clocks.js    the five selectable clock faces
+js/clocks.js    the four selectable clock faces
 js/prompts.js   prompt pools + shuffle-bag/generator + surprise objects
 js/app.js       the random pomodoro engine + UI wiring
 ```
