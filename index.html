@@ -37,9 +37,17 @@
       <p class="clock-note" id="clockNote">Whenever you're ready.</p>
 
       <div class="controls">
+        <button id="resetBtn" class="icon-btn" title="Reset the current phase" aria-label="Reset the current phase">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" />
+          </svg>
+        </button>
         <button id="startBtn" class="btn btn-primary">Start</button>
-        <button id="skipBtn" class="btn btn-quiet" title="Skip to the next phase">Skip</button>
-        <button id="resetBtn" class="btn btn-quiet" title="Reset the current phase">Reset</button>
+        <button id="skipBtn" class="icon-btn" title="Skip to the next phase" aria-label="Skip to the next phase">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="5 4 15 12 5 20" fill="currentColor" stroke="none" /><line x1="19" y1="5" x2="19" y2="19" />
+          </svg>
+        </button>
       </div>
 
       <div class="cycle-row">

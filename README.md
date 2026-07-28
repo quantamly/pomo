@@ -26,8 +26,12 @@ Open `index.html` in any browser. No build step, no dependencies, no server.
   **analog** face, a quiet **minimal** number, and a retro **LCD segment**.
 - **Independent auto-start** — separately choose whether focus sessions and
   breaks start on their own, or start each block yourself.
+- **Color that follows the phase** — the clock and main button shift hue by state
+  (focus green, rest gold, paused stone, ready moss), chosen for their feel.
 - **Glanceable from another tab** — the remaining time and phase show live in the
   browser tab title.
+- **Playful prompts** — a big pool of short, witty lines under the clock (rarely
+  repeats), and a layout that scales down cleanly to small windows and phones.
 - Settings and your chosen scene persist between visits (localStorage).
 - Respects `prefers-reduced-motion`; keyboard-friendly (Space starts/pauses,
   Esc closes settings).
