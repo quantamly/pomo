@@ -56,6 +56,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var el = {
     body: document.body,
+    card: document.querySelector(".timer-card"),
     scene: $("scene"),
     phase: $("phaseLabel"),
     dial: $("dial"),
@@ -92,126 +93,7 @@
     tick: null,
   };
 
-  // short, encouraging lines — no longer spoil the random duration
-  var PROMPTS = {
-    focus: [
-      // calm originals
-      "Settle in.", "One gentle block.", "You've got this.", "Ease into the work.",
-      "Small steps count.", "Just this one thing.", "Begin softly.", "Follow the thread.",
-      "Stay with it.", "One breath, then start.", "Quiet mind, steady hands.", "Let the rest wait.",
-      "Curiosity over pressure.", "Progress, not perfection.",
-      // witty & smart
-      "Plot twist: you actually do the thing.",
-      "Future-you is watching. Impress them.",
-      "The tabs can wait. All 47 of them.",
-      "Do it badly, then do it better.",
-      "Your phone will survive without you.",
-      "One task enters. One task leaves.",
-      "Procrastination is not a personality.",
-      "Be the deadline you wish to see.",
-      "Deep work, shallow snacks.",
-      "Make Past-you's to-do list nervous.",
-      "Focus now, flex later.",
-      "The muse respects a start button.",
-      "Channel your inner very-online monk.",
-      "Less doomscroll, more do-scroll.",
-      "Pretend the wifi is watching.",
-      "Great things start slightly annoyed.",
-      "You vs. the task. You win.",
-      "Momentum is just showing up, twice.",
-      "Bribe yourself with a future snack.",
-      "This block sponsored by sheer willpower.",
-      "Turn 'ugh' into 'huh, done.'",
-      "Small brain, big focus. Let's go.",
-      "The notifications are not your friends.",
-      "Aim for done, not divine.",
-      "Your attention, please — literally.",
-      "Silence the goblin of distraction.",
-      "Type like nobody's judging (they're not).",
-      "Progress bar: you, moving forward.",
-      "Be suspiciously productive.",
-      "Ready, set, minimal chaos.",
-      "The couch will still be there. Promise.",
-      "Outwork your excuses, gently.",
-      "Enter beast mode, calmly.",
-      "Do the boring bit first. Trap sprung.",
-      "One brick. Then the wall builds itself.",
-      "Your ideas want out. Let them.",
-      "Concentrate like it's a competitive sport.",
-      "The task fears your focus.",
-      "Fewer tabs, fewer tears.",
-      "Be the calm in your own to-do storm.",
-      "Start ugly, finish proud.",
-      "Trust the boring magic of just starting.",
-      "Give this block your least distracted self.",
-      "Make it happen, then make tea.",
-      "Focus: it's basically a superpower.",
-      "The scroll can wait. Greatness can't.",
-      "Do the thing, ignore the ping.",
-      "Quietly become unstoppable.",
-      "Attention is a gift. Regift it here.",
-      "You've got one job. Adore it briefly.",
-    ],
-    rest: [
-      // calm originals
-      "Breathe.", "Let it drift.", "Rest well.", "Unclench your shoulders.",
-      "Look out a window.", "Stretch, softly.", "Sip some water.", "Rest your eyes.",
-      "Let your mind wander.", "Roll your neck slowly.", "Stand and sway a little.", "Nothing to do now.",
-      "Soften your jaw.", "You earned this pause.",
-      // witty & smart
-      "Go stare at something that isn't a screen.",
-      "Hydrate like a houseplant with ambitions.",
-      "Do absolutely nothing, expertly.",
-      "Blink. Yes, on purpose.",
-      "Touch grass. Or at least a plant.",
-      "Your eyes filed a complaint. Rest them.",
-      "Be gloriously unproductive for a bit.",
-      "Stretch like a cat who owns the place.",
-      "Snack responsibly. Or don't. Live.",
-      "Look out the window like a music video.",
-      "Let your brain buffer.",
-      "Wander off. Come back wiser.",
-      "Stand up. Yes, all the way up.",
-      "Rest is productive. Science-ish says so.",
-      "Refill your cup. And the mug too.",
-      "Give your shoulders a vacation.",
-      "Nap-adjacent activities encouraged.",
-      "Do a lap around the kitchen.",
-      "Breathe like you mean it.",
-      "Close your eyes and pretend it's a spa.",
-      "Aggressively relax.",
-      "Reward: doing nothing, guilt-free.",
-      "Let the to-do list gather dust.",
-      "Stare into the middle distance, dramatically.",
-      "Yawn without shame.",
-      "Pet something soft, real or imagined.",
-      "Unclench everything. Yes, that too.",
-      "Go be a person, not a productivity unit.",
-      "Daydream: officially on the clock.",
-      "Wiggle. It counts as movement.",
-      "Water: the original energy drink.",
-      "Rest now, brag about it later.",
-      "Let the silence do the talking.",
-      "Recharge like the phone you keep ignoring.",
-      "Take five, keep four for later.",
-      "Be a cloud for a minute.",
-      "Stretch toward the ceiling, greet it.",
-      "Sip something warm and smug.",
-      "Give the future a rested you.",
-      "Look 20 feet away. Your eyes: relieved.",
-      "Do the least. Master it.",
-      "Permission to flop granted.",
-      "Marinate in a little peace.",
-      "Your brain deserves a snack too.",
-      "Slow down; the work will keep.",
-      "Idle hands, happy mind.",
-      "Roll your neck like you're unbothered.",
-      "A tiny walk fixes surprising things.",
-      "Rest is not a plot hole. It's the story.",
-      "Come back when you're a little softer.",
-    ],
-  };
-  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  var Prompts = window.NariPrompts;
 
   function randMinutes(min, max) {
     min = Math.max(1, Math.min(min, max));
@@ -235,12 +117,13 @@
     if (phase === "focus") {
       state.total = randMinutes(settings.focusMin, settings.focusMax);
       el.phase.textContent = "Focus";
-      el.note.textContent = pick(PROMPTS.focus);
+      el.note.textContent = Prompts.next("focus");
     } else {
       state.total = randMinutes(settings.restMin, settings.restMax);
       el.phase.textContent = "Rest";
-      el.note.textContent = pick(PROMPTS.rest);
+      el.note.textContent = Prompts.next("rest");
     }
+    maybeSurprise();
     // starting a phase is silent — the alarm sounds when a phase *ends*
     state.remaining = state.total;
     startClock();
@@ -307,6 +190,17 @@
     var frac = state.total > 0 ? state.remaining / state.total : 0;
     Clocks.update(el.dial, frac, state.remaining, state.running, state.phase);
     updateTitle();
+  }
+
+  // every so often, a little something pops up and floats away — pure delight
+  function maybeSurprise() {
+    if (Math.random() > 0.3) return;
+    var span = document.createElement("span");
+    span.className = "surprise-pop";
+    span.textContent = Prompts.randomObject();
+    span.style.left = (36 + Math.random() * 28) + "%";
+    el.card.appendChild(span);
+    setTimeout(function () { span.remove(); }, 2400);
   }
 
   // colour the clock + primary button by the phase we're in

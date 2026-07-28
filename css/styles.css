@@ -143,12 +143,31 @@ body[data-mood="dark"] .scene-veil {
 }
 
 .timer-card {
+  position: relative;
   width: min(440px, 92vw);
   border-radius: var(--radius-lg);
   padding: clamp(18px, 4vw, 34px) clamp(16px, 4vw, 30px);
   text-align: center;
   color: var(--glass-ink);
   animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* a little object that pops up and floats away — surprise = reward */
+.surprise-pop {
+  position: absolute;
+  top: 10%;
+  font-size: clamp(1.9rem, 7vw, 2.7rem);
+  pointer-events: none;
+  z-index: 3;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 4px 8px var(--glass-shadow));
+  animation: popFloat 2.4s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@keyframes popFloat {
+  0%   { opacity: 0; transform: translateY(12px) scale(0.4) rotate(-10deg); }
+  16%  { opacity: 1; transform: translateY(0) scale(1.25) rotate(5deg); }
+  30%  { transform: translateY(-4px) scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(-76px) scale(1) rotate(7deg); }
 }
 @keyframes rise {
   from { opacity: 0; transform: translateY(14px) scale(0.98); }
@@ -691,6 +710,8 @@ input:focus-visible, .select:focus-visible, .btn:focus-visible,
   }
   .scene-anim, .hg-grain, .rain-drop, .leaf, .sway-leaf { animation: none !important; }
   .hg-grains { opacity: 0 !important; }
+  /* still show the surprise, just hold it still then let JS remove it */
+  .surprise-pop { animation: none !important; opacity: 1 !important; transform: none !important; }
 }
 
 @media (max-width: 480px) {

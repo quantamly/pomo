@@ -31,8 +31,12 @@ Open `index.html` in any browser. No build step, no dependencies, no server.
   (focus green, rest gold, paused stone, ready moss), chosen for their feel.
 - **Glanceable from another tab** — the remaining time and phase show live in the
   browser tab title.
-- **Playful prompts** — a big pool of short, witty lines under the clock (rarely
-  repeats), and a layout that scales down cleanly to small windows and phones.
+- **Endlessly fresh prompts** — witty one-liners under the clock that *never*
+  repeat back-to-back (a no-repeat shuffle bag) and mix in combinatorially
+  generated reward lines, so it always surprises. Edit `js/prompts.js` to add more.
+- **Surprise pop-ups** — every so often a little something (🍵 🧁 🌸 …) pops up
+  and floats away, for a small hit of delight.
+- Layout scales down cleanly to small windows and phones.
 - Settings and your chosen scene persist between visits (localStorage).
 - Respects `prefers-reduced-motion`; keyboard-friendly (Space starts/pauses,
   Esc closes settings).
@@ -45,6 +49,7 @@ css/styles.css  theme, glass UI, ambient scene animations
 js/scenes.js    the nine SVG nature scenes
 js/sounds.js    Web Audio alarm synthesis (master volume, tap)
 js/clocks.js    the five selectable clock faces
+js/prompts.js   prompt pools + shuffle-bag/generator + surprise objects
 js/app.js       the random pomodoro engine + UI wiring
 ```
 
