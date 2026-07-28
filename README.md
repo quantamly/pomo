@@ -20,7 +20,8 @@ Open `index.html` in any browser. No build step, no dependencies, no server.
   block, rising chime, deep gong, soft tone), generated live with the Web Audio
   API. Set one for **when focus ends** and one for **when a break ends**, each
   with a preview, plus an **alarm volume** slider.
-- **Soft interface sounds** — a gentle low tap on button presses (toggleable).
+- **Satisfying interface sounds** — a bright, rising "pop" on button presses
+  (a positive-valence, rewarding contour), toggleable.
 - **Five clock faces** — Rounded digital, a **live hourglass** (sand streams
   from the neck onto a growing pile; hover to reveal the exact time), an
   **analog** face, a quiet **minimal** number, and a retro **LCD segment**.

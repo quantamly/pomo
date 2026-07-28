@@ -172,11 +172,18 @@
       var ac = audio();
       fn(ac, ac.currentTime + 0.02);
     },
-    // low, soft wood-block for button presses — reassuring, not alerting
+    // A bright, rising "pop" for button presses. Grounded in how the brain
+    // reads sound: a fast RISING pitch contour and a consonant sparkle partial
+    // signal positive valence/reward, a snappy 2 ms attack reads as crisp and
+    // "activating", and mid-range (not sub-bass) frequencies actually cut
+    // through — so the tap feels satisfying instead of low-key.
     tap: function () {
       var ac = audio();
-      var t = ac.currentTime + 0.005;
-      voice(ac, { start: t, freq: 150, glideTo: 92, dur: 0.09, gain: 0.14, attack: 0.002, type: "sine", filter: "lowpass", filterFreq: 500 });
+      var t = ac.currentTime + 0.004;
+      // punchy body: quick upward glide of ~a fifth
+      voice(ac, { start: t, freq: 440, glideTo: 680, dur: 0.13, gain: 0.32, attack: 0.002, type: "triangle" });
+      // bright octave sparkle for crispness/lift
+      voice(ac, { start: t, freq: 1320, glideTo: 1660, dur: 0.09, gain: 0.12, attack: 0.002, type: "sine" });
     },
     setVolume: function (v) {
       volume = Math.max(0, Math.min(1, v));
