@@ -24,6 +24,11 @@
       <span class="brand-name">Nari</span>
     </div>
     <div class="topbar-actions">
+      <button id="openHistory" class="ghost-btn ghost-icon" aria-haspopup="dialog" aria-controls="historyModal" aria-label="Session history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><path d="M12 7v5l3 2" />
+        </svg>
+      </button>
       <button id="openInfo" class="ghost-btn ghost-icon" aria-haspopup="dialog" aria-controls="infoModal" aria-label="Why Nari works">?</button>
       <button id="openSettings" class="ghost-btn" aria-haspopup="dialog" aria-controls="panel">
         <span class="gear" aria-hidden="true">✦</span> Settings
@@ -82,8 +87,23 @@
 
     <div class="panel-body">
       <section class="field-group">
+        <h3>Mode</h3>
+        <div class="seg" role="radiogroup" aria-label="Mode">
+          <label class="seg-btn">
+            <input type="radio" name="mode" id="modeTimer" value="timer" checked />
+            <span>Random timer</span>
+          </label>
+          <label class="seg-btn">
+            <input type="radio" name="mode" id="modeStopwatch" value="stopwatch" />
+            <span>Open stopwatch</span>
+          </label>
+        </div>
+        <p class="hint" id="modeHint">A surprise length counts down; it ends on its own.</p>
+      </section>
+
+      <section class="field-group">
         <h3>Focus length</h3>
-        <p class="hint">Each focus block is drawn at random from this range.</p>
+        <p class="hint" id="focusHint">Each focus block is drawn at random from this range.</p>
         <div class="range-row">
           <label>Min <input type="number" id="focusMin" min="1" max="180" value="20" /> min</label>
           <label>Max <input type="number" id="focusMax" min="1" max="180" value="30" /> min</label>
@@ -92,7 +112,7 @@
 
       <section class="field-group">
         <h3>Rest length</h3>
-        <p class="hint">Breaks are drawn at random from this range too.</p>
+        <p class="hint" id="restHint">Breaks are drawn at random from this range too.</p>
         <div class="range-row">
           <label>Min <input type="number" id="restMin" min="1" max="120" value="5" /> min</label>
           <label>Max <input type="number" id="restMax" min="1" max="120" value="10" /> min</label>
@@ -182,6 +202,18 @@
         <dd>Fresh lines and little pop-ups add unpredictable delight, so returning to focus feels good, not grim.</dd>
       </div>
     </dl>
+  </aside>
+
+  <!-- Session history -->
+  <div class="scrim" id="historyScrim" hidden></div>
+  <aside class="info-modal glass" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyTitle" hidden>
+    <div class="info-head">
+      <h2 id="historyTitle">Sessions</h2>
+      <button id="closeHistory" class="ghost-btn ghost-icon" aria-label="Close">✕</button>
+    </div>
+    <p class="history-totals" id="historyTotals"></p>
+    <div class="history-body" id="historyBody"></div>
+    <button id="clearHistory" class="linklike" type="button">Clear history</button>
   </aside>
 
   <script src="js/scenes.js"></script>

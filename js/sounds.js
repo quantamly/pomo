@@ -190,6 +190,29 @@
       var t = ac.currentTime + 0.004;
       voice(ac, { start: t, freq: 104, glideTo: 80, dur: 0.07, gain: 0.11, attack: 0.002, type: "sine", filter: "lowpass", filterFreq: 360 });
     },
+    // bright ascending flourish — "you've done enough, well done"
+    celebrate: function () {
+      var ac = audio();
+      var t = ac.currentTime + 0.02;
+      var run = [0, 2, 4, 5, 4];
+      for (var i = 0; i < run.length; i++) {
+        voice(ac, { start: t + i * 0.1, freq: PENTA[run[i]], dur: 0.7, gain: 0.2, attack: 0.004, type: "triangle" });
+        voice(ac, { start: t + i * 0.1, freq: PENTA[run[i]] * 2, dur: 0.35, gain: 0.06, attack: 0.004, type: "sine" });
+      }
+      // final sparkle up top
+      voice(ac, { start: t + run.length * 0.1, freq: PENTA_HI[5], dur: 0.9, gain: 0.14, attack: 0.004, type: "sine" });
+    },
+
+    // gentle but insistent low double-tone — "heads up, don't overdo it"
+    warn: function () {
+      var ac = audio();
+      var t = ac.currentTime + 0.02;
+      [0, 0.34].forEach(function (o) {
+        voice(ac, { start: t + o, freq: 392, glideTo: 300, dur: 0.3, gain: 0.26, attack: 0.006, type: "triangle", filter: "lowpass", filterFreq: 900 });
+        voice(ac, { start: t + o, freq: 196, dur: 0.32, gain: 0.12, attack: 0.006, type: "sine" });
+      });
+    },
+
     setVolume: function (v) {
       volume = Math.max(0, Math.min(1, v));
       if (master) master.gain.value = volume;

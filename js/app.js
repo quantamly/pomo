@@ -16,6 +16,7 @@
 
   // ---- persistent settings ------------------------------------------------
   var settings = {
+    mode: "timer",            // "timer" (random countdown) | "stopwatch" (count up)
     focusMin: 20, focusMax: 30,
     restMin: 5, restMax: 10,
     autoStartFocus: true,
@@ -52,6 +53,23 @@
     try { localStorage.setItem(STORE_KEY, JSON.stringify(settings)); } catch (e) {}
   }
 
+  // ---- session record -----------------------------------------------------
+  var LOG_KEY = "nari.log.v1";
+  var sessionLog = [];
+  try {
+    var savedLog = JSON.parse(localStorage.getItem(LOG_KEY));
+    if (Array.isArray(savedLog)) sessionLog = savedLog;
+  } catch (e) { /* ignore */ }
+  function persistLog() {
+    try { localStorage.setItem(LOG_KEY, JSON.stringify(sessionLog.slice(-60))); } catch (e) {}
+  }
+  function logSession(kind, ms) {
+    if (ms < 1000) return; // ignore accidental instant skips
+    sessionLog.push({ kind: kind, ms: ms, at: Date.now() });
+    if (sessionLog.length > 60) sessionLog = sessionLog.slice(-60);
+    persistLog();
+  }
+
   // ---- element refs -------------------------------------------------------
   var $ = function (id) { return document.getElementById(id); };
   var el = {
@@ -78,6 +96,18 @@
     closeInfo: $("closeInfo"),
     infoModal: $("infoModal"),
     infoScrim: $("infoScrim"),
+    openHistory: $("openHistory"),
+    closeHistory: $("closeHistory"),
+    historyModal: $("historyModal"),
+    historyScrim: $("historyScrim"),
+    historyBody: $("historyBody"),
+    historyTotals: $("historyTotals"),
+    clearHistory: $("clearHistory"),
+    modeTimer: $("modeTimer"),
+    modeStopwatch: $("modeStopwatch"),
+    modeHint: $("modeHint"),
+    focusHint: $("focusHint"),
+    restHint: $("restHint"),
     focusMin: $("focusMin"), focusMax: $("focusMax"),
     restMin: $("restMin"), restMax: $("restMax"),
     autoStartFocus: $("autoStartFocus"), autoStartBreak: $("autoStartBreak"),
@@ -87,17 +117,25 @@
     bgUpload: $("bgUpload"), clearCustom: $("clearCustom"),
   };
 
-  // ---- timer state --------------------------------------------------------
+  // ---- timer state (elapsed-based; shared by timer + stopwatch) -----------
   var state = {
-    phase: "idle",     // idle | focus | rest
+    phase: "idle",       // idle | focus | rest
     running: false,
-    endAt: 0,          // timestamp the current phase ends
-    remaining: 0,      // ms left
-    total: 0,          // ms of the current phase
-    sessions: 0,       // completed focus blocks
-    pendingNext: null, // phase queued while idle
+    total: 0,            // timer: target ms; stopwatch: the max window ms
+    remaining: 0,        // timer only, derived
+    elapsedBefore: 0,    // ms banked across pauses
+    runStart: 0,         // ts the running segment began
+    minMs: 0, maxMs: 0,  // stopwatch thresholds for the current phase
+    minReached: false,
+    maxReached: false,
+    sessions: 0,         // completed focus blocks
+    pendingNext: null,   // phase queued while idle
     tick: null,
   };
+
+  function currentElapsed() {
+    return state.elapsedBefore + (state.running ? Date.now() - state.runStart : 0);
+  }
 
   var Prompts = window.NariPrompts;
 
@@ -119,25 +157,28 @@
 
   // ---- phase control ------------------------------------------------------
   function beginPhase(phase) {
+    var isFocus = phase === "focus";
     state.phase = phase;
-    if (phase === "focus") {
-      state.total = randMinutes(settings.focusMin, settings.focusMax);
-      el.phase.textContent = "Focus";
-      el.note.textContent = Prompts.next("focus");
-    } else {
-      state.total = randMinutes(settings.restMin, settings.restMax);
-      el.phase.textContent = "Rest";
-      el.note.textContent = Prompts.next("rest");
-    }
-    maybeSurprise();
-    // starting a phase is silent — the alarm sounds when a phase *ends*
+    state.elapsedBefore = 0;
+    state.minReached = false;
+    state.maxReached = false;
+    el.dial.classList.remove("warn");
+    var mn = isFocus ? settings.focusMin : settings.restMin;
+    var mx = isFocus ? settings.focusMax : settings.restMax;
+    state.minMs = mn * 60000;
+    state.maxMs = mx * 60000;
+    state.total = settings.mode === "stopwatch" ? state.maxMs : randMinutes(mn, mx);
     state.remaining = state.total;
+    el.phase.textContent = isFocus ? "Focus" : "Rest";
+    el.note.textContent = Prompts.next(isFocus ? "focus" : "rest");
+    maybeSurprise();
+    // starting a phase is silent — cues come at the end (timer) or min/max (stopwatch)
     startClock();
   }
 
   function startClock() {
     state.running = true;
-    state.endAt = Date.now() + state.remaining;
+    state.runStart = Date.now();       // keeps elapsedBefore, so this also resumes
     el.start.textContent = "Pause";
     render();
     if (state.tick) clearInterval(state.tick);
@@ -145,68 +186,133 @@
   }
 
   function pauseClock() {
+    state.elapsedBefore += Date.now() - state.runStart;
     state.running = false;
-    state.remaining = Math.max(0, state.endAt - Date.now());
     el.start.textContent = "Resume";
     if (state.tick) { clearInterval(state.tick); state.tick = null; }
     render();
   }
 
   function loop() {
-    var left = state.endAt - Date.now();
-    if (left <= 0) {
-      completePhase();
-      return;
+    var elapsed = currentElapsed();
+    if (settings.mode === "timer") {
+      if (elapsed >= state.total) { completePhase(); return; }
+    } else {
+      checkThresholds(elapsed);
     }
-    state.remaining = left;
     render();
+  }
+
+  // stopwatch: nudge at the min (celebrate) and max (warn), once each
+  function checkThresholds(elapsed) {
+    var isFocus = state.phase === "focus";
+    if (!state.minReached && elapsed >= state.minMs) {
+      state.minReached = true;
+      Sounds.celebrate();
+      popObject("🎉");
+      celebrateGlow();
+      el.note.textContent = isFocus
+        ? "You've done enough — rest whenever."
+        : "Rested enough — go when you're ready.";
+    }
+    if (!state.maxReached && elapsed >= state.maxMs) {
+      state.maxReached = true;
+      Sounds.warn();
+      el.note.textContent = isFocus
+        ? "Ease off — you're past your cap."
+        : "Time to head back — don't over-rest.";
+    }
   }
 
   function completePhase() {
     if (state.tick) { clearInterval(state.tick); state.tick = null; }
     var wasFocus = state.phase === "focus";
+    logSession(wasFocus ? "focus" : "rest", currentElapsed());
     if (wasFocus) {
       state.sessions += 1;
       updateSessionUI();
     }
-    // the alarm marks the END of the phase that just finished
-    Sounds.play(wasFocus ? settings.focusEndSound : settings.breakEndSound);
+    el.dial.classList.remove("warn");
+    // in timer mode the end alarm marks completion; stopwatch already cued min/max
+    if (settings.mode === "timer") {
+      Sounds.play(wasFocus ? settings.focusEndSound : settings.breakEndSound);
+    }
 
     var next = wasFocus ? "rest" : "focus";
     var autoStart = wasFocus ? settings.autoStartBreak : settings.autoStartFocus;
     if (autoStart) {
       beginPhase(next); // the next phase starts silently
     } else {
-      // stop and let the user start the next phase manually
-      state.running = false;
-      state.phase = "idle";
-      state.pendingNext = next;
-      state.remaining = 0;
-      el.phase.textContent = wasFocus ? "Break time" : "Ready";
-      el.note.textContent = wasFocus
-        ? "Nice work — rest when you're ready."
-        : "Refreshed. Begin when ready.";
-      el.start.textContent = "Start";
-      render();
+      goIdle(next, wasFocus ? "Break time" : "Ready",
+        wasFocus ? "Nice work — rest when you're ready." : "Refreshed. Begin when ready.");
     }
+  }
+
+  // settle into an idle state that previews the upcoming phase
+  function goIdle(next, label, note) {
+    if (state.tick) { clearInterval(state.tick); state.tick = null; }
+    state.running = false;
+    state.phase = "idle";
+    state.pendingNext = next;
+    state.elapsedBefore = 0;
+    state.minReached = false;
+    state.maxReached = false;
+    var isFocus = next === "focus";
+    var mn = isFocus ? settings.focusMin : settings.restMin;
+    var mx = isFocus ? settings.focusMax : settings.restMax;
+    state.total = settings.mode === "stopwatch" ? mx * 60000 : randMinutes(mn, mx);
+    state.remaining = state.total;
+    el.dial.classList.remove("warn");
+    el.phase.textContent = label;
+    el.note.textContent = note;
+    el.start.textContent = "Start";
+    render();
+  }
+
+  // what to display right now, per mode
+  function computeView() {
+    if (state.phase === "idle") {
+      return settings.mode === "stopwatch"
+        ? { frac: 1, displayMs: 0, overtime: false }
+        : { frac: 1, displayMs: state.total, overtime: false };
+    }
+    var elapsed = currentElapsed();
+    if (settings.mode === "timer") {
+      var remaining = Math.max(0, state.total - elapsed);
+      state.remaining = remaining;
+      return { frac: state.total > 0 ? remaining / state.total : 0, displayMs: remaining, overtime: false };
+    }
+    var max = state.maxMs || 1;
+    var frac = Math.max(0, Math.min(1, (max - elapsed) / max));
+    return { frac: frac, displayMs: elapsed, overtime: elapsed >= max };
   }
 
   function render() {
     setStateAttr();
-    var frac = state.total > 0 ? state.remaining / state.total : 0;
-    Clocks.update(el.dial, frac, state.remaining, state.running, state.phase);
-    updateTitle();
+    var v = computeView();
+    el.dial.classList.toggle("warn", v.overtime);
+    Clocks.update(el.dial, v.frac, v.displayMs, state.running, state.phase);
+    updateTitle(v);
+  }
+
+  function popObject(glyph) {
+    var span = document.createElement("span");
+    span.className = "surprise-pop";
+    span.textContent = glyph;
+    span.style.left = (36 + Math.random() * 28) + "%";
+    el.card.appendChild(span);
+    setTimeout(function () { span.remove(); }, 2400);
   }
 
   // every so often, a little something pops up and floats away — pure delight
   function maybeSurprise() {
     if (Math.random() > 0.3) return;
-    var span = document.createElement("span");
-    span.className = "surprise-pop";
-    span.textContent = Prompts.randomObject();
-    span.style.left = (36 + Math.random() * 28) + "%";
-    el.card.appendChild(span);
-    setTimeout(function () { span.remove(); }, 2400);
+    popObject(Prompts.randomObject());
+  }
+
+  function celebrateGlow() {
+    el.card.classList.add("celebrate");
+    setTimeout(function () { el.card.classList.remove("celebrate"); }, 1300);
   }
 
   // colour the clock + primary button by the phase we're in
@@ -215,14 +321,14 @@
     el.body.setAttribute("data-state", s);
   }
 
-  function updateTitle() {
-    if (state.phase === "idle" || state.total === 0) {
+  function updateTitle(v) {
+    if (state.phase === "idle") {
       document.title = BASE_TITLE;
       return;
     }
     var name = state.phase === "focus" ? "Focus" : "Rest";
-    var prefix = state.running ? "" : "⏸ ";
-    document.title = prefix + fmt(state.remaining) + " · " + name + " — Nari";
+    var prefix = v.overtime ? "⚠ " : (state.running ? "" : "⏸ ");
+    document.title = prefix + fmt(v.displayMs) + " · " + name + " — Nari";
   }
 
   function updateSessionUI() {
@@ -256,20 +362,12 @@
 
   el.reset.addEventListener("click", function () {
     if (state.phase === "idle") {
-      // full reset back to a fresh focus block
       state.sessions = 0;
-      state.pendingNext = null;
-      state.phase = "idle";
-      state.total = randMinutes(settings.focusMin, settings.focusMax);
-      state.remaining = state.total;
-      el.phase.textContent = "Ready";
-      el.note.textContent = "Whenever you're ready.";
-      el.start.textContent = "Start";
+      goIdle("focus", "Ready", "Whenever you're ready.");
       updateSessionUI();
-      render();
       return;
     }
-    // restart the current phase with a fresh random draw
+    // restart the current phase (fresh random draw in timer mode; back to 0 in stopwatch)
     beginPhase(state.phase);
   });
 
@@ -293,6 +391,28 @@
 
   el.autoStartFocus.addEventListener("change", function () { settings.autoStartFocus = el.autoStartFocus.checked; persist(); });
   el.autoStartBreak.addEventListener("change", function () { settings.autoStartBreak = el.autoStartBreak.checked; persist(); });
+
+  // ---- mode (random timer vs open stopwatch) -----------------------------
+  function updateModeHints() {
+    var sw = settings.mode === "stopwatch";
+    el.modeHint.textContent = sw
+      ? "The clock counts up — you choose when to stop. Nari celebrates at the min and warns at the max."
+      : "A surprise length counts down and ends on its own.";
+    var rangeHint = sw
+      ? "In stopwatch mode: celebrate at the min, warn (red) at the max."
+      : null;
+    el.focusHint.textContent = rangeHint || "Each focus block is drawn at random from this range.";
+    el.restHint.textContent = rangeHint || "Breaks are drawn at random from this range too.";
+    el.skip.title = sw ? "Stop this block and continue" : "Skip to the next phase";
+  }
+  function applyMode(mode) {
+    settings.mode = mode;
+    persist();
+    updateModeHints();
+    goIdle("focus", "Ready", "Whenever you're ready.");
+  }
+  el.modeTimer.addEventListener("change", function () { if (el.modeTimer.checked) applyMode("timer"); });
+  el.modeStopwatch.addEventListener("change", function () { if (el.modeStopwatch.checked) applyMode("stopwatch"); });
 
   el.clockStyle.addEventListener("change", function () { applyClockStyle(el.clockStyle.value); persist(); });
 
@@ -464,9 +584,64 @@
   el.closeInfo.addEventListener("click", closeInfo);
   el.infoScrim.addEventListener("click", closeInfo);
 
+  // ---- session history ---------------------------------------------------
+  function humanDuration(ms) {
+    var s = Math.round(ms / 1000);
+    var h = Math.floor(s / 3600);
+    var m = Math.floor((s % 3600) / 60);
+    if (h > 0) return h + "h " + m + "m";
+    if (m > 0) return m + "m";
+    return s + "s";
+  }
+  function renderHistory() {
+    var now = new Date();
+    var startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    var tf = 0, tr = 0;
+    sessionLog.forEach(function (e) {
+      if (e.at >= startOfDay) { if (e.kind === "focus") tf += e.ms; else tr += e.ms; }
+    });
+    el.historyTotals.textContent = "Today — focus " + humanDuration(tf) + " · rest " + humanDuration(tr);
+    if (!sessionLog.length) {
+      el.historyBody.innerHTML = '<p class="history-empty">No sessions yet. Finished focus and rest blocks show up here.</p>';
+      el.clearHistory.hidden = true;
+      return;
+    }
+    el.clearHistory.hidden = false;
+    el.historyBody.innerHTML = sessionLog.slice().reverse().map(function (e) {
+      var t = new Date(e.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      var isFocus = e.kind === "focus";
+      return '<div class="history-row">' +
+        '<span class="hr-emoji">' + (isFocus ? "🌱" : "🍵") + "</span>" +
+        '<span class="hr-label">' + (isFocus ? "Focus" : "Rest") + "</span>" +
+        '<span class="hr-dur">' + fmt(e.ms) + "</span>" +
+        '<span class="hr-time">' + t + "</span>" +
+        "</div>";
+    }).join("");
+  }
+  function openHistory() {
+    renderHistory();
+    el.historyModal.hidden = false;
+    el.historyScrim.hidden = false;
+    el.closeHistory.focus();
+  }
+  function closeHistory() {
+    el.historyModal.hidden = true;
+    el.historyScrim.hidden = true;
+    el.openHistory.focus();
+  }
+  el.openHistory.addEventListener("click", openHistory);
+  el.closeHistory.addEventListener("click", closeHistory);
+  el.historyScrim.addEventListener("click", closeHistory);
+  el.clearHistory.addEventListener("click", function () {
+    sessionLog = [];
+    persistLog();
+    renderHistory();
+  });
+
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") collapsePicker();
     if (e.key === "Escape" && !el.infoModal.hidden) closeInfo();
+    if (e.key === "Escape" && !el.historyModal.hidden) closeHistory();
     if (e.key === "Escape" && !el.panel.hidden) closePanel();
     // space toggles start/pause when not typing in a field
     if (e.code === "Space" && document.activeElement.tagName !== "INPUT" &&
@@ -496,6 +671,9 @@
     el.autoStartFocus.checked = settings.autoStartFocus;
     el.autoStartBreak.checked = settings.autoStartBreak;
     el.uiSounds.checked = settings.uiSounds;
+    el.modeTimer.checked = settings.mode !== "stopwatch";
+    el.modeStopwatch.checked = settings.mode === "stopwatch";
+    updateModeHints();
     el.alarmVolume.value = Math.round(settings.volume * 100);
     Sounds.setVolume(settings.volume);
     fillOptions(el.focusEndSound, Sounds.list(), settings.focusEndSound);
@@ -509,9 +687,11 @@
       applyScene(settings.scene);
     }
 
-    // seed an idle focus block so the chosen clock face shows a full time
+    // seed an idle block so the chosen clock face shows a sensible time
     state.phase = "idle";
-    state.total = randMinutes(settings.focusMin, settings.focusMax);
+    state.total = settings.mode === "stopwatch"
+      ? settings.focusMax * 60000
+      : randMinutes(settings.focusMin, settings.focusMax);
     state.remaining = state.total;
     el.session.textContent = "Session 1";
     el.note.textContent = "Whenever you're ready.";

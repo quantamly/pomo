@@ -27,6 +27,8 @@
   --state-soft: rgba(111, 154, 95, 0.20);
   --state-ink:  #f5fff2;
 
+  --danger: #DB5A4B;   /* overtime / "past your cap" */
+
   --radius-lg: 28px;
   --radius-md: 16px;
   --radius-sm: 11px;
@@ -45,6 +47,7 @@ body[data-mood="dark"] {
   --accent:        #E9C48C;
   --accent-soft:   rgba(233, 196, 140, 0.18);
   --ring-track:    rgba(242, 238, 228, 0.18);
+  --danger:        #F5836E;
 }
 
 /* Per-phase state colors — chosen for their psychological feel.
@@ -168,6 +171,25 @@ body[data-mood="dark"] .scene-veil {
   16%  { opacity: 1; transform: translateY(0) scale(1.25) rotate(5deg); }
   30%  { transform: translateY(-4px) scale(1) rotate(0deg); }
   100% { opacity: 0; transform: translateY(-76px) scale(1) rotate(7deg); }
+}
+
+/* overtime (stopwatch past the max): the clock goes red */
+.dial.warn .clock,
+.dial.warn .clock-minimal,
+.dial.warn .hg-time { color: var(--danger); }
+.dial.warn .ring-progress { stroke: var(--danger); }
+.dial.warn .hg-sand,
+.dial.warn .hg-grain,
+.dial.warn .hg-stream { fill: var(--danger); }
+.dial.warn .analog-arc,
+.dial.warn .hand-sec { stroke: var(--danger); }
+
+/* a brief warm-green pulse when you reach the minimum — well done */
+.timer-card.celebrate { animation: celebratePulse 1.3s ease-out; }
+@keyframes celebratePulse {
+  0%   { box-shadow: 0 18px 50px -12px var(--glass-shadow), 0 0 0 0 rgba(111, 154, 95, 0.5); }
+  40%  { box-shadow: 0 18px 50px -12px var(--glass-shadow), 0 0 34px 6px rgba(111, 154, 95, 0.45); }
+  100% { box-shadow: 0 18px 50px -12px var(--glass-shadow), 0 0 0 0 rgba(111, 154, 95, 0); }
 }
 @keyframes rise {
   from { opacity: 0; transform: translateY(14px) scale(0.98); }
@@ -713,6 +735,58 @@ input:focus-visible, .select:focus-visible, .btn:focus-visible,
   color: var(--glass-ink-dim);
 }
 
+/* ---------- Mode segmented control ---------- */
+.seg {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.30);
+  border: 1px solid var(--glass-border);
+  margin-bottom: 10px;
+}
+body[data-mood="dark"] .seg { background: rgba(255, 255, 255, 0.10); }
+.seg-btn { flex: 1; position: relative; margin: 0; cursor: pointer; }
+.seg-btn input { position: absolute; opacity: 0; pointer-events: none; }
+.seg-btn span {
+  display: block;
+  text-align: center;
+  padding: 8px 10px;
+  border-radius: calc(var(--radius-sm) - 3px);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--glass-ink-dim);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.seg-btn input:checked + span { background: var(--accent); color: #fff8ec; }
+body[data-mood="dark"] .seg-btn input:checked + span { color: #2a2416; }
+.seg-btn input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Session history ---------- */
+.history-totals {
+  margin: -4px 0 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--glass-ink-dim);
+}
+.history-body { display: flex; flex-direction: column; }
+.history-empty { margin: 8px 0; font-size: 0.9rem; color: var(--glass-ink-dim); }
+.history-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 4px;
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 0.9rem;
+}
+.history-row:last-child { border-bottom: none; }
+.hr-emoji { font-size: 1.1rem; }
+.hr-label { color: var(--glass-ink); font-weight: 600; }
+.hr-dur { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--glass-ink); }
+.hr-time { color: var(--glass-ink-dim); font-size: 0.8rem; min-width: 60px; text-align: right; }
+#clearHistory { margin-top: 14px; }
+
 [hidden] { display: none !important; }
 
 /* ---------- Scene ambient motion ---------- */
@@ -777,6 +851,7 @@ input:focus-visible, .select:focus-visible, .btn:focus-visible,
   .hg-grains { opacity: 0 !important; }
   /* still show the surprise, just hold it still then let JS remove it */
   .surprise-pop { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .timer-card.celebrate { animation: none !important; }
 }
 
 @media (max-width: 480px) {

@@ -11,6 +11,13 @@ Open `index.html` in any browser. No build step, no dependencies, no server.
 
 - **Randomized sessions** — set a min/max range for focus and for rest; each
   block picks a fresh duration (down to the second) inside that range.
+- **Two modes** — *Random timer* (counts down to a surprise length and ends on
+  its own) or *Open stopwatch* (counts **up** — you choose when to stop, with a
+  **celebrate** cue at your minimum time and a **red warning** at your maximum,
+  for focus and rest alike).
+- **Session history** — every finished focus/rest is logged with its actual
+  duration; a History panel shows the list plus today's focus/rest totals
+  (persisted, clearable).
 - **Nine painterly scenes** — Meadow, Sunset, Cloud sea, Forest, Twilight,
   Starry night, Rain, Autumn (drifting golden leaves) and a Tropical garden
   (fronds that sway now and then), all drawn as inline SVG. No image files.
