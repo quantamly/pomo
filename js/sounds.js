@@ -149,6 +149,58 @@
         voice(ac, { start: t + i * 0.11, freq: PENTA[run[i]], dur: 0.9, gain: 0.18, attack: 0.006, type: "triangle" });
       }
     },
+
+    // --- celebrate-leaning (reaching the minimum: "well done") ---
+    fanfare: function (ac, t) {
+      // bright ascending flourish with a sparkle up top
+      var run = [0, 2, 4, 5, 4];
+      for (var i = 0; i < run.length; i++) {
+        voice(ac, { start: t + i * 0.1, freq: PENTA[run[i]], dur: 0.7, gain: 0.2, attack: 0.004, type: "triangle" });
+        voice(ac, { start: t + i * 0.1, freq: PENTA[run[i]] * 2, dur: 0.35, gain: 0.06, attack: 0.004, type: "sine" });
+      }
+      voice(ac, { start: t + run.length * 0.1, freq: PENTA_HI[5], dur: 0.9, gain: 0.14, attack: 0.004, type: "sine" });
+    },
+    sparkle: function (ac, t) {
+      // fast, glittery high arpeggio
+      var run = [0, 2, 3, 4, 5];
+      for (var i = 0; i < run.length; i++) {
+        voice(ac, { start: t + i * 0.06, freq: PENTA_HI[run[i]], dur: 0.5, gain: 0.12, attack: 0.002, type: "sine" });
+      }
+    },
+    bloom: function (ac, t) {
+      // soft swelling major triad — warm, encouraging
+      [523.25, 659.25, 783.99].forEach(function (f) {
+        voice(ac, { start: t, freq: f, dur: 1.8, gain: 0.16, attack: 0.18, type: "sine" });
+      });
+      voice(ac, { start: t, freq: 1046.5, dur: 1.4, gain: 0.06, attack: 0.24, type: "sine" });
+    },
+
+    // --- warn-leaning (reaching the maximum: "heads up") ---
+    headsup: function (ac, t) {
+      // gentle but insistent low double-tone
+      [0, 0.34].forEach(function (o) {
+        voice(ac, { start: t + o, freq: 392, glideTo: 300, dur: 0.3, gain: 0.26, attack: 0.006, type: "triangle", filter: "lowpass", filterFreq: 900 });
+        voice(ac, { start: t + o, freq: 196, dur: 0.32, gain: 0.12, attack: 0.006, type: "sine" });
+      });
+    },
+    deepbell: function (ac, t) {
+      // low struck bell, medium decay
+      voice(ac, { start: t, freq: 196, dur: 2.4, gain: 0.3, attack: 0.004, type: "sine" });
+      voice(ac, { start: t, freq: 196 * 2.76, dur: 1.6, gain: 0.09, attack: 0.004, type: "sine" });
+      voice(ac, { start: t, freq: 196 * 5.4, dur: 0.8, gain: 0.04, attack: 0.004, type: "sine" });
+    },
+    knock: function (ac, t) {
+      // three hollow wood knocks
+      [0, 0.18, 0.36].forEach(function (o) {
+        voice(ac, { start: t + o, freq: 240, glideTo: 150, dur: 0.12, gain: 0.26, attack: 0.002, type: "square", filter: "lowpass", filterFreq: 700 });
+      });
+    },
+    lowpulse: function (ac, t) {
+      // two low, calm pulses
+      [0, 0.4].forEach(function (o) {
+        voice(ac, { start: t + o, freq: 150, dur: 0.36, gain: 0.24, attack: 0.02, type: "sine", filter: "lowpass", filterFreq: 400 });
+      });
+    },
   };
 
   var ORDER = [
@@ -161,12 +213,23 @@
     digital: "Soft tone", bowl: "Singing bowl", koto: "Koto pluck",
     musicbox: "Music box", rainstick: "Rain stick", zenblock: "Wood block",
     sunrise: "Rising chime",
+    fanfare: "Fanfare", sparkle: "Sparkle", bloom: "Bloom",
+    headsup: "Heads-up", deepbell: "Deep bell", knock: "Wood knock", lowpulse: "Low pulse",
   };
+
+  // dedicated sets for the stopwatch cues
+  var CELEBRATE_ORDER = ["fanfare", "sparkle", "bloom", "musicbox", "sunrise", "chime", "marimba"];
+  var WARN_ORDER = ["headsup", "deepbell", "knock", "lowpulse", "gong", "zenblock"];
+  function listFrom(order) {
+    return order.map(function (id) { return { id: id, label: LABELS[id] }; });
+  }
 
   window.NariSounds = {
     list: function () {
       return ORDER.map(function (id) { return { id: id, label: LABELS[id] }; });
     },
+    celebrateList: function () { return listFrom(CELEBRATE_ORDER); },
+    warnList: function () { return listFrom(WARN_ORDER); },
     play: function (id) {
       var fn = LIBRARY[id] || LIBRARY.chime;
       var ac = audio();
@@ -190,29 +253,6 @@
       var t = ac.currentTime + 0.004;
       voice(ac, { start: t, freq: 104, glideTo: 80, dur: 0.07, gain: 0.11, attack: 0.002, type: "sine", filter: "lowpass", filterFreq: 360 });
     },
-    // bright ascending flourish — "you've done enough, well done"
-    celebrate: function () {
-      var ac = audio();
-      var t = ac.currentTime + 0.02;
-      var run = [0, 2, 4, 5, 4];
-      for (var i = 0; i < run.length; i++) {
-        voice(ac, { start: t + i * 0.1, freq: PENTA[run[i]], dur: 0.7, gain: 0.2, attack: 0.004, type: "triangle" });
-        voice(ac, { start: t + i * 0.1, freq: PENTA[run[i]] * 2, dur: 0.35, gain: 0.06, attack: 0.004, type: "sine" });
-      }
-      // final sparkle up top
-      voice(ac, { start: t + run.length * 0.1, freq: PENTA_HI[5], dur: 0.9, gain: 0.14, attack: 0.004, type: "sine" });
-    },
-
-    // gentle but insistent low double-tone — "heads up, don't overdo it"
-    warn: function () {
-      var ac = audio();
-      var t = ac.currentTime + 0.02;
-      [0, 0.34].forEach(function (o) {
-        voice(ac, { start: t + o, freq: 392, glideTo: 300, dur: 0.3, gain: 0.26, attack: 0.006, type: "triangle", filter: "lowpass", filterFreq: 900 });
-        voice(ac, { start: t + o, freq: 196, dur: 0.32, gain: 0.12, attack: 0.006, type: "sine" });
-      });
-    },
-
     setVolume: function (v) {
       volume = Math.max(0, Math.min(1, v));
       if (master) master.gain.value = volume;

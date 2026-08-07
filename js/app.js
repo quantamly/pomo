@@ -24,6 +24,8 @@
     clockStyle: "digital",
     focusEndSound: "bowl",
     breakEndSound: "chime",
+    celebrateSound: "fanfare",
+    warnSound: "headsup",
     volume: 0.8,
     uiSounds: true,
     scene: "meadow",
@@ -60,15 +62,28 @@
     var savedLog = JSON.parse(localStorage.getItem(LOG_KEY));
     if (Array.isArray(savedLog)) sessionLog = savedLog;
   } catch (e) { /* ignore */ }
+  function startOfToday() {
+    var n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+  }
+  // history is today-only: drop anything from a previous day
+  function pruneToday() {
+    var cutoff = startOfToday();
+    var before = sessionLog.length;
+    sessionLog = sessionLog.filter(function (e) { return e.at >= cutoff; });
+    if (sessionLog.length !== before) persistLog();
+  }
   function persistLog() {
     try { localStorage.setItem(LOG_KEY, JSON.stringify(sessionLog.slice(-60))); } catch (e) {}
   }
   function logSession(kind, ms) {
     if (ms < 1000) return; // ignore accidental instant skips
+    pruneToday();
     sessionLog.push({ kind: kind, ms: ms, at: Date.now() });
     if (sessionLog.length > 60) sessionLog = sessionLog.slice(-60);
     persistLog();
   }
+  pruneToday(); // clear yesterday's entries on load
 
   // ---- element refs -------------------------------------------------------
   var $ = function (id) { return document.getElementById(id); };
@@ -113,6 +128,7 @@
     autoStartFocus: $("autoStartFocus"), autoStartBreak: $("autoStartBreak"),
     clockStyle: $("clockStyle"),
     focusEndSound: $("focusEndSound"), breakEndSound: $("breakEndSound"),
+    celebrateSound: $("celebrateSound"), warnSound: $("warnSound"),
     alarmVolume: $("alarmVolume"), uiSounds: $("uiSounds"),
     bgUpload: $("bgUpload"), clearCustom: $("clearCustom"),
   };
@@ -208,7 +224,7 @@
     var isFocus = state.phase === "focus";
     if (!state.minReached && elapsed >= state.minMs) {
       state.minReached = true;
-      Sounds.celebrate();
+      Sounds.play(settings.celebrateSound);
       popObject("🎉");
       celebrateGlow();
       el.note.textContent = isFocus
@@ -217,7 +233,7 @@
     }
     if (!state.maxReached && elapsed >= state.maxMs) {
       state.maxReached = true;
-      Sounds.warn();
+      Sounds.play(settings.warnSound);
       el.note.textContent = isFocus
         ? "Ease off — you're past your cap."
         : "Time to head back — don't over-rest.";
@@ -239,7 +255,10 @@
     }
 
     var next = wasFocus ? "rest" : "focus";
-    var autoStart = wasFocus ? settings.autoStartBreak : settings.autoStartFocus;
+    // stopwatch never auto-chains — you start each block yourself
+    var autoStart = settings.mode === "stopwatch"
+      ? false
+      : (wasFocus ? settings.autoStartBreak : settings.autoStartFocus);
     if (autoStart) {
       beginPhase(next); // the next phase starts silently
     } else {
@@ -404,6 +423,10 @@
     el.focusHint.textContent = rangeHint || "Each focus block is drawn at random from this range.";
     el.restHint.textContent = rangeHint || "Breaks are drawn at random from this range too.";
     el.skip.title = sw ? "Stop this block and continue" : "Skip to the next phase";
+    // show only the settings relevant to the current mode
+    document.querySelectorAll("[data-mode]").forEach(function (elm) {
+      elm.hidden = elm.getAttribute("data-mode") !== settings.mode;
+    });
   }
   function applyMode(mode) {
     settings.mode = mode;
@@ -418,6 +441,8 @@
 
   el.focusEndSound.addEventListener("change", function () { settings.focusEndSound = el.focusEndSound.value; persist(); Sounds.play(settings.focusEndSound); });
   el.breakEndSound.addEventListener("change", function () { settings.breakEndSound = el.breakEndSound.value; persist(); Sounds.play(settings.breakEndSound); });
+  el.celebrateSound.addEventListener("change", function () { settings.celebrateSound = el.celebrateSound.value; persist(); Sounds.play(settings.celebrateSound); });
+  el.warnSound.addEventListener("change", function () { settings.warnSound = el.warnSound.value; persist(); Sounds.play(settings.warnSound); });
 
   el.alarmVolume.addEventListener("input", function () {
     settings.volume = (parseInt(el.alarmVolume.value, 10) || 0) / 100;
@@ -426,11 +451,15 @@
   });
   el.uiSounds.addEventListener("change", function () { settings.uiSounds = el.uiSounds.checked; persist(); });
 
+  var PREVIEW_SOUND = {
+    focusEnd: "focusEndSound", breakEnd: "breakEndSound",
+    celebrate: "celebrateSound", warn: "warnSound",
+  };
   document.querySelectorAll("[data-preview]").forEach(function (btn) {
     btn.addEventListener("click", function () {
       Sounds.warmup();
-      var which = btn.getAttribute("data-preview");
-      Sounds.play(which === "focusEnd" ? settings.focusEndSound : settings.breakEndSound);
+      var key = PREVIEW_SOUND[btn.getAttribute("data-preview")];
+      if (key) Sounds.play(settings[key]);
     });
   });
 
@@ -594,11 +623,10 @@
     return s + "s";
   }
   function renderHistory() {
-    var now = new Date();
-    var startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    pruneToday();
     var tf = 0, tr = 0;
     sessionLog.forEach(function (e) {
-      if (e.at >= startOfDay) { if (e.kind === "focus") tf += e.ms; else tr += e.ms; }
+      if (e.kind === "focus") tf += e.ms; else tr += e.ms;
     });
     el.historyTotals.textContent = "Today — focus " + humanDuration(tf) + " · rest " + humanDuration(tr);
     if (!sessionLog.length) {
@@ -678,6 +706,8 @@
     Sounds.setVolume(settings.volume);
     fillOptions(el.focusEndSound, Sounds.list(), settings.focusEndSound);
     fillOptions(el.breakEndSound, Sounds.list(), settings.breakEndSound);
+    fillOptions(el.celebrateSound, Sounds.celebrateList(), settings.celebrateSound);
+    fillOptions(el.warnSound, Sounds.warnList(), settings.warnSound);
     fillOptions(el.clockStyle, Clocks.list(), settings.clockStyle);
 
     buildSceneChoosers();

@@ -14,10 +14,10 @@ Open `index.html` in any browser. No build step, no dependencies, no server.
 - **Two modes** — *Random timer* (counts down to a surprise length and ends on
   its own) or *Open stopwatch* (counts **up** — you choose when to stop, with a
   **celebrate** cue at your minimum time and a **red warning** at your maximum,
-  for focus and rest alike).
+  for focus and rest alike). Each cue sound is selectable from its own set.
 - **Session history** — every finished focus/rest is logged with its actual
-  duration; a History panel shows the list plus today's focus/rest totals
-  (persisted, clearable).
+  duration; a History panel shows today's blocks plus focus/rest totals. It's
+  today-only — yesterday's entries clear automatically.
 - **Nine painterly scenes** — Meadow, Sunset, Cloud sea, Forest, Twilight,
   Starry night, Rain, Autumn (drifting golden leaves) and a Tropical garden
   (fronds that sway now and then), all drawn as inline SVG. No image files.

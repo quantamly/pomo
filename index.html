@@ -26,7 +26,10 @@
     <div class="topbar-actions">
       <button id="openHistory" class="ghost-btn ghost-icon" aria-haspopup="dialog" aria-controls="historyModal" aria-label="Session history">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><path d="M12 7v5l3 2" />
+          <line x1="9" y1="6" x2="20" y2="6" /><line x1="9" y1="12" x2="20" y2="12" /><line x1="9" y1="18" x2="20" y2="18" />
+          <circle cx="4.5" cy="6" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="4.5" cy="12" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="4.5" cy="18" r="1.4" fill="currentColor" stroke="none" />
         </svg>
       </button>
       <button id="openInfo" class="ghost-btn ghost-icon" aria-haspopup="dialog" aria-controls="infoModal" aria-label="Why Nari works">?</button>
@@ -119,7 +122,7 @@
         </div>
       </section>
 
-      <section class="field-group">
+      <section class="field-group" data-mode="timer">
         <h3>Flow</h3>
         <label class="switch-row">
           <input type="checkbox" id="autoStartFocus" checked />
@@ -136,7 +139,7 @@
         <select id="clockStyle" class="select"></select>
       </section>
 
-      <section class="field-group">
+      <section class="field-group" data-mode="timer">
         <h3>When focus ends</h3>
         <div class="sound-row">
           <select id="focusEndSound" class="select"></select>
@@ -144,11 +147,27 @@
         </div>
       </section>
 
-      <section class="field-group">
+      <section class="field-group" data-mode="timer">
         <h3>When a break ends</h3>
         <div class="sound-row">
           <select id="breakEndSound" class="select"></select>
           <button class="btn btn-quiet btn-sm" data-preview="breakEnd">Preview</button>
+        </div>
+      </section>
+
+      <section class="field-group" data-mode="stopwatch">
+        <h3>When you reach the minimum</h3>
+        <div class="sound-row">
+          <select id="celebrateSound" class="select"></select>
+          <button class="btn btn-quiet btn-sm" data-preview="celebrate">Preview</button>
+        </div>
+      </section>
+
+      <section class="field-group" data-mode="stopwatch">
+        <h3>When you reach the maximum</h3>
+        <div class="sound-row">
+          <select id="warnSound" class="select"></select>
+          <button class="btn btn-quiet btn-sm" data-preview="warn">Preview</button>
         </div>
       </section>
 
