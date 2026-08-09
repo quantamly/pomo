@@ -288,29 +288,50 @@
     render();
   }
 
+  function clamp01(x) { return Math.max(0, Math.min(1, x)); }
+
   // what to display right now, per mode
   function computeView() {
+    var stopwatch = settings.mode === "stopwatch";
+    var v = {
+      mode: settings.mode, phase: state.phase, running: state.running,
+      frac: 1, bonusFrac: 0, drainFrac: 1, displayMs: 0,
+      overtime: false, goalReached: false,
+    };
     if (state.phase === "idle") {
-      return settings.mode === "stopwatch"
-        ? { frac: 1, displayMs: 0, overtime: false }
-        : { frac: 1, displayMs: state.total, overtime: false };
+      // stopwatch idle: empty ring, ready to fill up; timer idle: full ring
+      v.frac = stopwatch ? 0 : 1;
+      v.displayMs = stopwatch ? 0 : state.total;
+      return v;
     }
     var elapsed = currentElapsed();
-    if (settings.mode === "timer") {
+    if (!stopwatch) {
       var remaining = Math.max(0, state.total - elapsed);
       state.remaining = remaining;
-      return { frac: state.total > 0 ? remaining / state.total : 0, displayMs: remaining, overtime: false };
+      v.frac = state.total > 0 ? remaining / state.total : 0;
+      v.drainFrac = v.frac;
+      v.displayMs = remaining;
+      return v;
     }
+    // stopwatch: the ring FILLS toward the minimum goal; a thin inner ring
+    // then tracks the min→max "bonus"; the hourglass keeps draining over max.
+    var min = state.minMs || 1;
     var max = state.maxMs || 1;
-    var frac = Math.max(0, Math.min(1, (max - elapsed) / max));
-    return { frac: frac, displayMs: elapsed, overtime: elapsed >= max };
+    v.frac = clamp01(elapsed / min);
+    v.bonusFrac = max > min ? clamp01((elapsed - min) / (max - min)) : (elapsed >= min ? 1 : 0);
+    v.drainFrac = clamp01((max - elapsed) / max);
+    v.displayMs = elapsed;
+    v.goalReached = elapsed >= min;
+    v.overtime = elapsed >= max;
+    return v;
   }
 
   function render() {
     setStateAttr();
     var v = computeView();
     el.dial.classList.toggle("warn", v.overtime);
-    Clocks.update(el.dial, v.frac, v.displayMs, state.running, state.phase);
+    el.dial.classList.toggle("goal", v.goalReached && !v.overtime);
+    Clocks.update(el.dial, v);
     updateTitle(v);
   }
 

@@ -10,9 +10,13 @@
   "use strict";
 
   var RING_R = 110;
-  var RING_LEN = 2 * Math.PI * RING_R;      // digital face progress ring
+  var RING_LEN = 2 * Math.PI * RING_R;      // digital face — main progress ring
+  var RING2_R = 100;
+  var RING2_LEN = 2 * Math.PI * RING2_R;    // digital face — inner "bonus" ring
   var ARC_R = 104;
-  var ARC_LEN = 2 * Math.PI * ARC_R;        // analog depleting arc
+  var ARC_LEN = 2 * Math.PI * ARC_R;        // analog main arc
+  var ARC2_R = 95;
+  var ARC2_LEN = 2 * Math.PI * ARC2_R;      // analog inner "bonus" arc
 
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   function fmt(ms) {
@@ -24,11 +28,13 @@
     '<svg class="face-ring" viewBox="0 0 240 240" aria-hidden="true">' +
     '<circle class="ring-track" cx="120" cy="120" r="' + RING_R + '"/>' +
     '<circle class="ring-progress" cx="120" cy="120" r="' + RING_R + '"/>' +
+    '<circle class="ring-progress2" cx="120" cy="120" r="' + RING2_R + '"/>' +
     "</svg>";
 
-  function setRing(node, frac) {
-    node.style.strokeDasharray = RING_LEN;
-    node.style.strokeDashoffset = RING_LEN * (1 - frac);
+  // draw a ring/arc filled to `frac` of its circumference `len`
+  function setRing(node, frac, len) {
+    node.style.strokeDasharray = len;
+    node.style.strokeDashoffset = len * (1 - frac);
   }
 
   // -------------------------------------------------------------------------
@@ -40,11 +46,13 @@
         dial.innerHTML = ringSvg +
           '<div class="clock-wrap"><div class="clock" data-clock>25:00</div></div>';
         this.ring = dial.querySelector(".ring-progress");
+        this.ring2 = dial.querySelector(".ring-progress2");
         this.num = dial.querySelector("[data-clock]");
       },
-      update: function (dial, frac, ms) {
-        setRing(this.ring, frac);
-        this.num.textContent = fmt(ms);
+      update: function (dial, v) {
+        setRing(this.ring, v.frac, RING_LEN);
+        setRing(this.ring2, v.bonusFrac || 0, RING2_LEN);
+        this.num.textContent = fmt(v.displayMs);
       },
     },
 
@@ -55,8 +63,8 @@
           '<div class="clock-wrap"><div class="clock clock-minimal" data-clock>25:00</div></div>';
         this.num = dial.querySelector("[data-clock]");
       },
-      update: function (dial, frac, ms) {
-        this.num.textContent = fmt(ms);
+      update: function (dial, v) {
+        this.num.textContent = fmt(v.displayMs);
       },
     },
 
@@ -74,19 +82,21 @@
           '<svg class="face-analog" viewBox="0 0 240 240" aria-hidden="true">' +
           '<circle class="analog-bg" cx="120" cy="120" r="112"/>' +
           '<circle class="analog-arc" cx="120" cy="120" r="' + ARC_R + '" transform="rotate(-90 120 120)"/>' +
+          '<circle class="analog-arc2" cx="120" cy="120" r="' + ARC2_R + '" transform="rotate(-90 120 120)"/>' +
           '<g class="ticks">' + ticks + "</g>" +
           '<line class="hand hand-min" data-min x1="120" y1="132" x2="120" y2="52"/>' +
           '<line class="hand hand-sec" data-sec x1="120" y1="140" x2="120" y2="40"/>' +
           '<circle class="analog-cap" cx="120" cy="120" r="6"/>' +
           "</svg>";
         this.arc = dial.querySelector(".analog-arc");
+        this.arc2 = dial.querySelector(".analog-arc2");
         this.min = dial.querySelector("[data-min]");
         this.sec = dial.querySelector("[data-sec]");
       },
-      update: function (dial, frac, ms) {
-        this.arc.style.strokeDasharray = ARC_LEN;
-        this.arc.style.strokeDashoffset = ARC_LEN * (1 - frac);
-        var secs = Math.max(0, ms / 1000);
+      update: function (dial, v) {
+        setRing(this.arc, v.frac, ARC_LEN);
+        setRing(this.arc2, v.bonusFrac || 0, ARC2_LEN);
+        var secs = Math.max(0, v.displayMs / 1000);
         var minAngle = ((secs / 60) % 60) / 60 * 360;
         var secAngle = (secs % 60) / 60 * 360;
         this.min.setAttribute("transform", "rotate(" + minAngle + " 120 120)");
@@ -131,7 +141,9 @@
         this.time = dial.querySelector("[data-clock]");
         this.sr = dial.querySelector("[data-sr]");
       },
-      update: function (dial, frac, ms, running) {
+      update: function (dial, v) {
+        var frac = v.drainFrac;
+        var running = v.running;
         var H = 94;                    // usable sand height per bulb
         var topH = frac * H;
         var botH = (1 - frac) * H;
@@ -161,9 +173,9 @@
         this.grains.style.setProperty("--drop", drop + "px");
         this.grains.style.opacity = streaming ? "1" : "0";
 
-        var t = fmt(ms);
+        var t = fmt(v.displayMs);
         this.time.textContent = t;
-        this.sr.textContent = t + " remaining";
+        this.sr.textContent = t;
       },
     },
   };
@@ -181,8 +193,8 @@
       active.build(dial);
       return active.id;
     },
-    update: function (dial, frac, ms, running, phase) {
-      active.update(dial, frac, ms, running, phase);
+    update: function (dial, view) {
+      active.update(dial, view);
     },
   };
 })();

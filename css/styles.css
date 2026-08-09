@@ -177,12 +177,35 @@ body[data-mood="dark"] .scene-veil {
 .dial.warn .clock,
 .dial.warn .clock-minimal,
 .dial.warn .hg-time { color: var(--danger); }
-.dial.warn .ring-progress { stroke: var(--danger); }
+.dial.warn .ring-progress,
+.dial.warn .ring-progress2,
+.dial.warn .analog-arc,
+.dial.warn .analog-arc2,
+.dial.warn .hand-sec { stroke: var(--danger); }
 .dial.warn .hg-sand,
 .dial.warn .hg-grain,
 .dial.warn .hg-stream { fill: var(--danger); }
-.dial.warn .analog-arc,
-.dial.warn .hand-sec { stroke: var(--danger); }
+
+/* stopwatch: the inner "bonus" ring (min → max, after the goal is met) */
+.ring-progress2 {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  opacity: 0.8;
+  transition: stroke-dashoffset 0.35s linear, stroke 0.5s ease;
+}
+.analog-arc2 {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.75;
+  transition: stroke-dashoffset 0.35s linear, stroke 0.5s ease;
+}
+/* the goal circle completing gets a soft glow */
+.dial.goal .ring-progress { filter: drop-shadow(0 0 8px var(--state)); }
+.dial.goal .analog-arc { filter: drop-shadow(0 0 6px var(--state)); }
 
 /* a brief warm-green pulse when you reach the minimum — well done */
 .timer-card.celebrate { animation: celebratePulse 1.3s ease-out; }
@@ -389,99 +412,86 @@ body[data-mood="dark"] .btn-quiet:hover { background: rgba(255, 255, 255, 0.18);
 }
 .leaf-trail { letter-spacing: 2px; }
 
-/* ---------- Scene picker — compact trigger, expands on demand ---------- */
-.scene-picker {
-  position: fixed;
-  left: max(10px, env(safe-area-inset-left));
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 15;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
+/* ---------- Scene picker — top-bar trigger + dropdown ---------- */
+.scene-picker { position: relative; display: inline-flex; }
 .scene-toggle {
-  width: 44px; height: 44px;
+  width: 38px; height: 38px;
   flex: 0 0 auto;
   border-radius: 50%;
   border: 1px solid var(--glass-border);
   background-color: var(--glass-bg);
   background-size: cover;
   background-position: center;
-  box-shadow: 0 8px 22px -8px var(--glass-shadow);
+  box-shadow: 0 6px 18px -8px var(--glass-shadow);
   cursor: pointer;
   padding: 0;
   overflow: hidden;
-  -webkit-backdrop-filter: blur(18px);
-  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   transition: transform 0.15s ease;
 }
-.scene-toggle:hover { transform: scale(1.06); }
+.scene-toggle:hover { transform: translateY(-1px) scale(1.05); }
 .scene-toggle-glyph {
   display: grid;
   place-items: center;
   width: 100%; height: 100%;
   color: #fff;
-  background: rgba(0, 0, 0, 0.26);
+  background: rgba(0, 0, 0, 0.24);
 }
-.scene-toggle-glyph svg { width: 19px; height: 19px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55)); }
+.scene-toggle-glyph svg { width: 18px; height: 18px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55)); }
 
 .scene-dock {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  padding: 0;
-  border-radius: 999px;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(3, 38px);
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
   background: var(--glass-bg);
   border: 1px solid transparent;
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   max-height: 0;
   opacity: 0;
-  transform: translateX(-8px);
+  transform: translateY(-6px) scale(0.96);
+  transform-origin: top right;
   overflow: hidden;
   pointer-events: none;
-  scrollbar-width: none;
-  transition: max-height 0.32s ease, opacity 0.22s ease, transform 0.24s ease,
-    padding 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+  transition: max-height 0.28s ease, opacity 0.2s ease, transform 0.22s ease,
+    padding 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
 }
 .scene-picker:hover .scene-dock,
 .scene-picker:focus-within .scene-dock,
 .scene-picker.open .scene-dock {
-  max-height: 78vh;
+  max-height: 320px;
   opacity: 1;
-  transform: translateX(0);
-  padding: 10px 9px;
+  transform: translateY(0) scale(1);
+  padding: 12px;
   border-color: var(--glass-border);
-  box-shadow: 0 12px 30px -10px var(--glass-shadow);
+  box-shadow: 0 16px 34px -12px var(--glass-shadow);
   overflow-y: auto;
   pointer-events: auto;
 }
 .scene-dock::-webkit-scrollbar { display: none; }
 .dock-thumb {
-  width: 36px; height: 36px;
+  width: 38px; height: 38px;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
-  flex: 0 0 auto;
   padding: 0;
   background-size: cover;
   background-position: center;
   transition: transform 0.15s ease, border-color 0.2s ease;
   box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
 }
-.dock-thumb:hover { transform: translateX(3px) scale(1.06); }
-.dock-thumb[aria-pressed="true"] {
-  border-color: var(--accent);
-  transform: translateX(2px) scale(1.05);
-}
-@media (max-width: 560px) {
-  .scene-picker { left: 6px; }
-  .scene-toggle { width: 38px; height: 38px; }
-  .scene-picker.open .scene-dock,
-  .scene-picker:focus-within .scene-dock { max-height: 68vh; }
-  .dock-thumb { width: 30px; height: 30px; }
+.dock-thumb:hover { transform: scale(1.09); }
+.dock-thumb[aria-pressed="true"] { border-color: var(--accent); transform: scale(1.05); }
+@media (max-width: 480px) {
+  .scene-dock { grid-template-columns: repeat(3, 34px); }
+  .dock-thumb { width: 34px; height: 34px; }
 }
 
 /* ---------- Settings drawer ---------- */

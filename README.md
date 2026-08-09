@@ -14,14 +14,16 @@ Open `index.html` in any browser. No build step, no dependencies, no server.
 - **Two modes** — *Random timer* (counts down to a surprise length and ends on
   its own) or *Open stopwatch* (counts **up** — you choose when to stop, with a
   **celebrate** cue at your minimum time and a **red warning** at your maximum,
-  for focus and rest alike). Each cue sound is selectable from its own set.
+  for focus and rest alike). Each cue sound is selectable from its own set, and
+  the ring **fills up toward your minimum** — a complete circle means you've hit
+  the goal, with a thin inner ring tracking the bonus time toward the cap.
 - **Session history** — every finished focus/rest is logged with its actual
   duration; a History panel shows today's blocks plus focus/rest totals. It's
   today-only — yesterday's entries clear automatically.
 - **Nine painterly scenes** — Meadow, Sunset, Cloud sea, Forest, Twilight,
   Starry night, Rain, Autumn (drifting golden leaves) and a Tropical garden
   (fronds that sway now and then), all drawn as inline SVG. No image files.
-  Picked from a compact toggle on the left that expands on demand.
+  Picked from a compact toggle in the top bar that expands into a grid.
 - **Bring your own background** — upload any image to use as your backdrop.
 - **Synthesized alarms** — thirteen soft tones (wind chime, marimba, singing
   bowl, koto, music box, temple bell, birdsong, water drops, rain stick, wood
