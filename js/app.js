@@ -16,7 +16,7 @@
 
   // ---- persistent settings ------------------------------------------------
   var settings = {
-    mode: "timer",            // "timer" (random countdown) | "stopwatch" (count up)
+    mode: "stopwatch",        // default for new visitors; "timer" (random countdown) | "stopwatch" (count up)
     focusMin: 20, focusMax: 30,
     restMin: 5, restMax: 10,
     autoStartFocus: true,

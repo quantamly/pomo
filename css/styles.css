@@ -488,8 +488,23 @@ body[data-mood="dark"] .btn-quiet:hover { background: rgba(255, 255, 255, 0.18);
 }
 .dock-thumb:hover { transform: scale(1.09); }
 .dock-thumb[aria-pressed="true"] { border-color: var(--accent); transform: scale(1.05); }
-@media (max-width: 480px) {
-  .dock-thumb { width: 34px; height: 34px; }
+/* on narrow windows the toggle sits mid-bar, so anchor the strip to the whole
+   viewport instead — keeps all nine scenes on-screen (scrolls if truly tiny) */
+@media (max-width: 720px) {
+  .scene-dock {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 58px);
+    left: 10px;
+    right: 10px;
+    max-width: none;
+    justify-content: safe center;
+    transform-origin: top center;
+  }
+  .dock-thumb { width: 32px; height: 32px; }
+}
+@media (max-width: 380px) {
+  .scene-dock { gap: 6px; padding: 8px 10px; }
+  .dock-thumb { width: 28px; height: 28px; }
 }
 
 /* ---------- Settings drawer ---------- */

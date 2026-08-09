@@ -11,10 +11,11 @@ Open `index.html` in any browser. No build step, no dependencies, no server.
 
 - **Randomized sessions** — set a min/max range for focus and for rest; each
   block picks a fresh duration (down to the second) inside that range.
-- **Two modes** — *Random timer* (counts down to a surprise length and ends on
-  its own) or *Open stopwatch* (counts **up** — you choose when to stop, with a
+- **Two modes** — *Open stopwatch* (the default: counts **up**, you choose when
+  to stop) or *Random timer* (counts down to a surprise length and ends on its
+  own). In stopwatch mode you get a
   **celebrate** cue at your minimum time and a **red warning** at your maximum,
-  for focus and rest alike). Each cue sound is selectable from its own set, and
+  for focus and rest alike. Each cue sound is selectable from its own set, and
   the ring **fills up toward your minimum** — a complete circle means you've hit
   the goal, with a thin inner ring tracking the bonus time toward the cap.
 - **Session history** — every finished focus/rest is logged with its actual
