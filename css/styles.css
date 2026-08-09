@@ -440,44 +440,43 @@ body[data-mood="dark"] .btn-quiet:hover { background: rgba(255, 255, 255, 0.18);
 }
 .scene-toggle-glyph svg { width: 18px; height: 18px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55)); }
 
+/* horizontal 1×9 strip, opened by clicking the toggle (no hover gaps) */
 .scene-dock {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
   z-index: 30;
-  display: grid;
-  grid-template-columns: repeat(3, 38px);
+  display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
-  padding: 0 12px;
-  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  max-width: min(440px, calc(100vw - 20px));
+  border-radius: 999px;
   background: var(--glass-bg);
-  border: 1px solid transparent;
+  border: 1px solid var(--glass-border);
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
-  max-height: 0;
-  opacity: 0;
-  transform: translateY(-6px) scale(0.96);
-  transform-origin: top right;
-  overflow: hidden;
-  pointer-events: none;
-  transition: max-height 0.28s ease, opacity 0.2s ease, transform 0.22s ease,
-    padding 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
-}
-.scene-picker:hover .scene-dock,
-.scene-picker:focus-within .scene-dock,
-.scene-picker.open .scene-dock {
-  max-height: 320px;
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  padding: 12px;
-  border-color: var(--glass-border);
   box-shadow: 0 16px 34px -12px var(--glass-shadow);
-  overflow-y: auto;
-  pointer-events: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top right;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.22s ease, visibility 0.22s ease;
 }
 .scene-dock::-webkit-scrollbar { display: none; }
+.scene-picker.open .scene-dock {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
 .dock-thumb {
   width: 38px; height: 38px;
+  flex: 0 0 auto;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
@@ -490,7 +489,6 @@ body[data-mood="dark"] .btn-quiet:hover { background: rgba(255, 255, 255, 0.18);
 .dock-thumb:hover { transform: scale(1.09); }
 .dock-thumb[aria-pressed="true"] { border-color: var(--accent); transform: scale(1.05); }
 @media (max-width: 480px) {
-  .scene-dock { grid-template-columns: repeat(3, 34px); }
   .dock-thumb { width: 34px; height: 34px; }
 }
 
