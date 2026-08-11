@@ -255,9 +255,10 @@
     }
 
     var next = wasFocus ? "rest" : "focus";
-    // stopwatch never auto-chains — you start each block yourself
+    // stopwatch: Skip flows straight into the next block, already running;
+    // timer: honor the auto-start toggles
     var autoStart = settings.mode === "stopwatch"
-      ? false
+      ? true
       : (wasFocus ? settings.autoStartBreak : settings.autoStartFocus);
     if (autoStart) {
       beginPhase(next); // the next phase starts silently
